@@ -6,7 +6,7 @@ import { isApplicationStarted, setApplicationStarted } from "./lib/appState";
 import { appStorage } from "./lib/appStorage";
 import AppHeader from "./components/AppHeader";
 import { useAuth } from "./lib/AuthContext";
-import { getRegisteredAccounts } from "./lib/auth";
+import { getRegisteredAccounts, waitForAuth } from "./lib/auth";
 import { doc, getDoc, updateDoc, getDocs, collection } from "firebase/firestore";
 import { db } from "./lib/firebase";
 import { AcademyAccount } from "./types";
@@ -101,8 +101,8 @@ export default function AcademyDashboard() {
              setAdminReviews(rData);
           } catch(e) {}
           
-          // Also sync legacy fallback
-          localStorage.setItem("academyBasicInfo", JSON.stringify({ ...account, id: user.uid }));
+          // Sync to email-scoped storage so it doesn't bleed between users
+          appStorage.setItem("academyBasicInfo", JSON.stringify({ ...account, id: user.uid }));
         } else {
           // Fallback to legacy if account not found in firestore
           const basicInfoStr = localStorage.getItem("academyBasicInfo");
@@ -375,9 +375,6 @@ export default function AcademyDashboard() {
                     </div>
                     <div>
                       <div className="flex items-center gap-3 mb-2 flex-wrap">
-                        <div className="w-full mb-1">
-                           <span className="px-3 py-1 bg-[#C9A227]/10 text-[#C9A227] rounded-lg text-[10px] font-black uppercase tracking-widest border border-[#C9A227]/20">طالب التصنيف: ربيع حمدان</span>
-                        </div>
                         <h1 className="font-display-md text-3xl md:text-4xl font-black text-[#022C22]">
                           {academyName ? `أكاديمية ${academyName}` : "لوحة متابعة الملف"}
                         </h1>
@@ -672,7 +669,7 @@ export default function AcademyDashboard() {
                         ) : (
                           <Link 
                             to={axis.route} 
-                            onClick={() => localStorage.setItem("lastOpenedAxis", axis.route)}
+                            onClick={() => appStorage.setItem("lastOpenedAxis", axis.route)}
                             className={`w-full py-4 rounded-xl font-black text-sm flex items-center justify-center gap-3 transition-all ${status.percent === 100 ? 'bg-green-50 text-green-700 hover:bg-green-100' : 'bg-gray-50 text-[#022C22] hover:bg-gray-100 border border-gray-200'}`}
                           >
                              {status.percent === 100 ? 'مكتمل - تصفح المرفقات' : 'بدء تعبئة المحور'}

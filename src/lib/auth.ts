@@ -64,6 +64,7 @@ export const saveSession = (session: AuthSession) => {
 export const clearSession = () => {
   localStorage.removeItem(SESSION_KEY);
   localStorage.removeItem("adminViewEmail");
+  localStorage.removeItem("adminViewUid");
 };
 
 export interface AuthResult {

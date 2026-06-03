@@ -1,78 +1,123 @@
-import { db } from "./firebase";
-import { doc, setDoc } from "firebase/firestore";
-import { compressImage } from "./imageUtils";
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { collection, addDoc } from 'firebase/firestore';
+import { storage, db, auth } from './firebase';
+import { compressImage } from './imageUtils';
 
-export const uploadFileAndReturnMetadata = async (
+const ALLOWED_TYPES = [
+  'image/jpeg', 'image/jpg', 'image/png', 'image/webp',
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+];
+const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+
+function safeName(name: string): string {
+  return name.replace(/[^a-zA-Z0-9._-]/g, '_');
+}
+
+/**
+ * Upload a file to Firebase Storage and save its metadata to Firestore.
+ *
+ * Signature is backward-compatible with the previous Firestore-chunk version:
+ *   uploadFileAndReturnMetadata(file, academyId, contextPath)
+ *
+ * Returns the same metadata shape so all existing callers continue to work.
+ * The key improvement: downloadURL is now a real Firebase Storage https:// URL.
+ */
+export const uploadFileAndReturnMetadata = (
   file: File,
   academyId: string,
-  contextPath: string
-) => {
-  if (!file) throw new Error("No file provided");
+  contextPath: string,
+): Promise<any> => {
+  return new Promise((resolve, reject) => {
+    if (!file) return reject(new Error('لم يتم اختيار ملف.'));
 
-  const MAX_SIZE_MB = 10;
-  if (file.size > MAX_SIZE_MB * 1024 * 1024) {
-    throw new Error(`حجم الملف كبير جداً. الحد الأقصى هو ${MAX_SIZE_MB}MB.`);
-  }
+    const user = auth.currentUser;
+    if (!user) return reject(new Error('يجب تسجيل الدخول لرفع الملفات.'));
 
-  try {
-    return new Promise<any>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = async () => {
+    if (file.size > MAX_BYTES) {
+      return reject(new Error('حجم الملف يتجاوز الحد المسموح (10MB).'));
+    }
+
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      return reject(
+        new Error('نوع الملف غير مسموح. يُسمح بـ: JPG، PNG، WEBP، PDF، DOC، DOCX.'),
+      );
+    }
+
+    const timestamp = Date.now();
+    const safe = safeName(file.name);
+    // Organized Storage path: academies/{uid}/{context}/{timestamp}-{filename}
+    const storagePath = `academies/${academyId}/${contextPath}/${timestamp}-${safe}`;
+    const storageRef = ref(storage, storagePath);
+    const uploadTask = uploadBytesResumable(storageRef, file);
+
+    uploadTask.on(
+      'state_changed',
+      () => {}, // progress — callers don't use it yet
+      (error) => {
+        console.error('Storage upload error:', error);
+        reject(new Error('فشل رفع الملف. يرجى المحاولة مرة أخرى.'));
+      },
+      async () => {
         try {
-          const base64 = reader.result as string;
-          const fileId = Date.now().toString() + '_' + Math.random().toString(36).substring(2);
-          
-          const chunkSize = 800000;
-          const chunks = [];
-          for (let i = 0; i < base64.length; i += chunkSize) {
-            chunks.push(base64.slice(i, i + chunkSize));
-          }
+          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
 
-          for (let i = 0; i < chunks.length; i++) {
-            const chunkDocRef = doc(db, `users/${academyId}/uploads/${fileId}_chunk_${i}`);
-            await setDoc(chunkDocRef, {
-              data: chunks[i],
-              index: i,
-              totalChunks: chunks.length,
-              fileId: fileId,
-              createdAt: Date.now()
-            });
-          }
-
-          let previewData = undefined;
-          
+          // Compressed preview for images (kept for inline display without re-downloading)
+          let preview: string | undefined;
           if (file.type.startsWith('image/')) {
             try {
-               previewData = await compressImage(base64, 400, 400, 0.4);
-            } catch (e) {
-               console.warn("Failed to generate preview", e);
+              // Read as base64 for preview generation
+              const base64 = await readAsDataURL(file);
+              preview = await compressImage(base64, 400, 400, 0.4);
+            } catch {
+              // Preview failure is non-fatal
             }
           }
 
-          resolve({
-            type: "file",
+          const metadata = {
+            type: 'file' as const,
             name: file.name,
             originalName: file.name,
-            mimeType: file.type || 'application/octet-stream',
-            contentType: file.type || 'application/octet-stream',
+            mimeType: file.type,
+            contentType: file.type,
             size: file.size,
-            downloadURL: `firestore://${academyId}/${fileId}`,
-            url: `firestore://${academyId}/${fileId}`,
-            preview: previewData,
+            downloadURL,
+            url: downloadURL,      // alias — many callers read .url
+            storagePath,
+            preview,
             uploadedAt: new Date().toISOString(),
-            uploaded: true,
-            uploadStatus: "uploaded"
-          });
-        } catch (err: any) {
-             console.error("Upload save error", err);
-             reject(new Error("حدث خطأ أثناء حفظ الملف. يرجى المحاولة مرة أخرى."));
+            uploadedBy: user.uid,
+            academyId,
+            uploaded: true as const,
+            uploadStatus: 'uploaded' as const,
+          };
+
+          // Persist metadata to Firestore so admin can list/access uploads
+          try {
+            await addDoc(collection(db, 'academies', academyId, 'uploads'), {
+              ...metadata,
+              createdAt: timestamp,
+            });
+          } catch (e) {
+            // Non-fatal: metadata save failure doesn't block the upload result
+            console.warn('Could not save upload metadata to Firestore:', e);
+          }
+
+          resolve(metadata);
+        } catch (e) {
+          reject(new Error('فشل الحصول على رابط التحميل من Firebase Storage.'));
         }
-      };
-      reader.onerror = () => reject(new Error("Failed to read file"));
-      reader.readAsDataURL(file);
-    });
-  } catch (error: any) {
-    console.error("Upload error: ", error);
-    throw new Error(error.message || "حدث خطأ أثناء رفع الملف. يرجى المحاولة مرة أخرى.");
-  }
+      },
+    );
+  });
 };
+
+function readAsDataURL(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}

@@ -1,6 +1,8 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // Deny everything by default
     match /{document=**} {
       allow read, write: if false;
     }
@@ -13,36 +15,69 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    // Admin check: hardcoded emails OR role field in the user's own document.
+    // Uses request.auth.token.email (available without an extra read) for the
+    // hardcoded emails, and only does a Firestore get() for role-based admins.
     function isAdmin() {
-      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
-      let email = ('email' in request.auth.token) ? request.auth.token.email : '';
+      let email = request.auth != null ? request.auth.token.email : '';
       return isSignedIn() && (
-        email == 'constitutionoflife@gmail.com' || 
+        email == 'constitutionoflife@gmail.com' ||
         email == 'grassroots@the-lfa.com.lb' ||
-        (userDoc != null && (
-          userDoc.data.get('role', '') == 'admin' || 
-          userDoc.data.get('isAdmin', false) == true || 
-          userDoc.data.get('loginEmail', '') == 'grassroots@the-lfa.com.lb'
-        ))
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'admin' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isAdmin', false) == true
       );
     }
 
+    // ── User profile documents ──────────────────────────────────────────────
     match /users/{userId} {
-      allow read: if isOwner(userId) || isAdmin();
-      allow create, update: if isOwner(userId) || isAdmin();
+      allow read:   if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) || isAdmin();
+      allow update: if isOwner(userId) || isAdmin();
       allow delete: if isOwner(userId) || isAdmin();
-      allow list: if isAdmin();
-      
+      allow list:   if isAdmin();
+
       match /progress/{key} {
         allow read, write: if isOwner(userId) || isAdmin();
       }
-      
+
       match /adminReviews/{key} {
         allow read, write: if isOwner(userId) || isAdmin();
       }
-      
+
+      // Legacy: files stored as Firestore base64 chunks (read-only for migration)
       match /uploads/{key} {
-        allow read, write: if isOwner(userId) || isAdmin();
+        allow read:  if isOwner(userId) || isAdmin();
+        allow write: if isOwner(userId); // kept for any pending legacy writes
+      }
+    }
+
+    // ── Academy documents (new structure) ───────────────────────────────────
+    // academyId == ownerUid for simplicity (one academy per user account)
+    match /academies/{academyId} {
+      allow read:   if isOwner(academyId) || isAdmin();
+      allow create: if isSignedIn() && request.auth.uid == academyId;
+      allow update: if isOwner(academyId) || isAdmin();
+      allow delete: if isAdmin();
+      allow list:   if isAdmin();
+
+      // Upload metadata saved after each Firebase Storage upload
+      match /uploads/{uploadId} {
+        allow read:  if isOwner(academyId) || isAdmin();
+        allow write: if isOwner(academyId);
+      }
+
+      // Registry entries (if migrated to sub-collection in future)
+      match /registry/{profileId} {
+        allow read, write: if isOwner(academyId) || isAdmin();
+      }
+
+      // Classification axis data (if migrated to sub-collection in future)
+      match /classificationA/{axisId} {
+        allow read, write: if isOwner(academyId) || isAdmin();
+      }
+
+      match /classificationB/{axisId} {
+        allow read, write: if isOwner(academyId) || isAdmin();
       }
     }
   }

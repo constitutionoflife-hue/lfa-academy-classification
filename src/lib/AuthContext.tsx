@@ -47,9 +47,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           }
         }
       } catch (error) {
+        // Firestore fetch failed (network, rules, etc.) but the Firebase Auth
+        // session is still valid — keep the user logged in, just without profile data.
         console.error("AuthContext fetch user data error:", error);
         if (active) {
-          setUser(null);
+          // Do NOT null out `user` — that would cause a redirect loop.
           setAccount(null);
         }
       } finally {

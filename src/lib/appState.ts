@@ -21,7 +21,7 @@ export const isApplicationStarted = (): boolean => {
     "classificationB_organization",
     "classificationB_technical",
     "classificationB_facilities",
-    "classificationB_care",
+    "classificationB_safeguarding",
     "classificationB_equipment"
   ];
 

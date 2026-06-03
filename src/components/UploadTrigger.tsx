@@ -1,4 +1,5 @@
 import React, { useRef } from 'react';
+import { STORAGE_ENABLED, STORAGE_DISABLED_MSG } from '../lib/storageConfig';
 
 interface UploadTriggerProps {
   onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -17,6 +18,29 @@ export default function UploadTrigger({
 }: UploadTriggerProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Storage is disabled at the platform level (Spark plan)
+  if (!STORAGE_ENABLED) {
+    return (
+      <div className={`relative group ${className}`}>
+        {/* Children are rendered normally so layout is preserved */}
+        <div className="opacity-50 pointer-events-none select-none">
+          {children}
+        </div>
+        {/* Tooltip shown on hover */}
+        <div
+          className="absolute inset-0 cursor-not-allowed flex items-center justify-center"
+          title={STORAGE_DISABLED_MSG}
+        >
+          <div className="absolute inset-x-0 bottom-0 translate-y-full pt-1 z-20 hidden group-hover:block">
+            <div className="bg-gray-800 text-white text-[11px] font-bold rounded-lg px-3 py-2 text-center shadow-lg leading-relaxed whitespace-nowrap">
+              {STORAGE_DISABLED_MSG}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!disabled) {
@@ -33,9 +57,8 @@ export default function UploadTrigger({
         accept={accept}
         onChange={(e) => {
           onFileSelect(e);
-          // Reset value to allow selecting the same file again
           if (fileInputRef.current) {
-             fileInputRef.current.value = '';
+            fileInputRef.current.value = '';
           }
         }}
         disabled={disabled}

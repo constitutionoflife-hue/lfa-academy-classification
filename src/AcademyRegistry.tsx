@@ -495,9 +495,9 @@ export default function AcademyRegistry() {
           }
         }
       }));
-    } catch (err) {
+    } catch (err: any) {
       console.error("Upload failed", err);
-      alert("تعذر رفع الصورة. يرجى المحاولة مرة أخرى.");
+      alert(err?.message || "تعذر رفع الصورة. يرجى المحاولة مرة أخرى.");
       e.target.value = '';
       return;
     }

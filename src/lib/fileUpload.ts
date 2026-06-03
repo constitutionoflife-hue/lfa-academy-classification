@@ -2,6 +2,7 @@ import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { collection, addDoc } from 'firebase/firestore';
 import { storage, db, auth } from './firebase';
 import { compressImage } from './imageUtils';
+import { STORAGE_ENABLED, STORAGE_DISABLED_MSG } from './storageConfig';
 
 const ALLOWED_TYPES = [
   'image/jpeg', 'image/jpg', 'image/png', 'image/webp',
@@ -30,6 +31,7 @@ export const uploadFileAndReturnMetadata = (
   contextPath: string,
 ): Promise<any> => {
   return new Promise((resolve, reject) => {
+    if (!STORAGE_ENABLED) return reject(new Error(STORAGE_DISABLED_MSG));
     if (!file) return reject(new Error('لم يتم اختيار ملف.'));
 
     const user = auth.currentUser;

@@ -117,7 +117,7 @@ export default function AcademyProfilePage() {
     } catch (err) {
       setIsLoading(false);
       console.error("Logo upload failed:", err);
-      alert("تعذر رفع الصورة. يرجى المحاولة مرة أخرى.");
+      alert((err as any)?.message || "تعذر رفع الصورة. يرجى المحاولة مرة أخرى.");
     }
   };
 

@@ -7,7 +7,7 @@
  *  - UploadTrigger components become visually disabled.
  *  - A clear Arabic message is shown to the user.
  */
-export const STORAGE_ENABLED = false;
+export const STORAGE_ENABLED = true;
 
 export const STORAGE_DISABLED_MSG =
   'رفع الملفات غير متاح حالياً إلى حين تفعيل التخزين';

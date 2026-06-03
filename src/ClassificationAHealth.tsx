@@ -1,4 +1,4 @@
-import UploadTrigger from "./components/UploadTrigger";
+﻿import UploadTrigger from "./components/UploadTrigger";
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AppHeader from "./components/AppHeader";
@@ -90,7 +90,7 @@ export default function ClassificationAHealth() {
         });
       } catch (err) {
         console.error("Upload failed", err);
-        alert("فشل رفع الملف. يرجى المحاولة مرة أخرى.");
+        alert((err as any)?.message || "فشل رفع الملف. يرجى المحاولة مرة أخرى.");
       }
     }
   };

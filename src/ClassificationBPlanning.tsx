@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { appStorage } from "./lib/appStorage";
 import { uploadFileAndReturnMetadata } from "./lib/fileUpload";
@@ -69,7 +69,7 @@ export default function ClassificationBPlanning() {
         setTimeout(() => setShowToast(false), 3000);
       } catch (err) {
         console.error("Upload failed", err);
-        alert("فشل رفع الملف. يرجى المحاولة مرة أخرى.");
+        alert((err as any)?.message || "فشل رفع الملف. يرجى المحاولة مرة أخرى.");
       }
     }
   };

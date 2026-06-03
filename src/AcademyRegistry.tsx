@@ -483,7 +483,12 @@ export default function AcademyRegistry() {
       if (!user) user = await waitForAuth();
       if (!user) throw new Error("يجب تسجيل الدخول");
       
-      const fileData = await uploadFileAndReturnMetadata(file, user.uid, "registry");
+      // profileId: use existing id (editing) or formState.id (new, set on first save)
+      const profileId = editingId || (formState as any).id || `new_${Date.now()}`;
+      const fileData = await uploadFileAndReturnMetadata(file, user.uid, "registry", {
+        profileId,
+        fieldKey: field,
+      });
       
       // Update with success
       setFormState(prev => ({

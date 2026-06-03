@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getPersonByRole, RegistryPerson } from "./lib/registry";
 import { appStorage } from "./lib/appStorage";
@@ -157,7 +157,7 @@ export default function ClassificationBLeadership() {
         });
       } catch (err) {
         console.error("Upload failed", err);
-        alert("فشل رفع الملف. يرجى المحاولة مرة أخرى.");
+        alert((err as any)?.message || "فشل رفع الملف. يرجى المحاولة مرة أخرى.");
       }
     }
   };

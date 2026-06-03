@@ -13,6 +13,7 @@ import { db, auth } from "./lib/firebase";
 import { AcademyAccount } from "./types";
 import { compressImage } from "./lib/imageUtils";
 import { NATIONALITIES, COUNTRY_CODES } from "./lib/constants";
+import { STORAGE_ENABLED } from "./lib/storageConfig";
 
 export default function AcademyRegistry() {
   const navigate = useNavigate();
@@ -234,36 +235,38 @@ export default function AcademyRegistry() {
       errors.push("نوع الخبرة مطلوب");
     }
 
-    // File validation
-    if (!formState.files?.profilePhoto?.uploaded) errors.push("الصورة الشخصية مطلوبة");
-    if (!formState.files?.idDocument?.uploaded) errors.push("الهوية الوطنية مطلوبة");
-    
-    const isLebanese = 
-      formState.nationality?.trim().toLowerCase() === "lebanese" ||
-      formState.nationality?.trim() === "لبناني" ||
-      formState.nationality?.trim() === "لبنانية" ||
-      formState.nationality?.trim() === "لبنان";
+    // File validation — only required when Storage is active
+    if (STORAGE_ENABLED) {
+      if (!formState.files?.profilePhoto?.uploaded) errors.push("الصورة الشخصية مطلوبة");
+      if (!formState.files?.idDocument?.uploaded) errors.push("الهوية الوطنية مطلوبة");
 
-    const isTargetRole = ['owner', 'bOwner', 'bGeneralSupervisor', 'technicalSupervisor'].includes(formState.roleKey || "");
+      const isLebanese =
+        formState.nationality?.trim().toLowerCase() === "lebanese" ||
+        formState.nationality?.trim() === "لبناني" ||
+        formState.nationality?.trim() === "لبنانية" ||
+        formState.nationality?.trim() === "لبنان";
 
-    if (isTargetRole) {
-      if (isLebanese && !formState.files?.criminalRecord?.uploaded) errors.push("السجل العدلي مطلوب");
-      if (!isLebanese && !formState.files?.residencyPermit?.uploaded) errors.push("صورة الإقامة مطلوبة");
-    }
+      const isTargetRole = ['owner', 'bOwner', 'bGeneralSupervisor', 'technicalSupervisor'].includes(formState.roleKey || "");
 
-    if (!(formState.files?.cv?.uploaded || formState.files?.supportingDocument?.uploaded)) errors.push("السيرة الذاتية مطلوبة");
-    if (!formState.files?.jobDescription?.uploaded) errors.push("المسمى الوظيفي مطلوب");
+      if (isTargetRole) {
+        if (isLebanese && !formState.files?.criminalRecord?.uploaded) errors.push("السجل العدلي مطلوب");
+        if (!isLebanese && !formState.files?.residencyPermit?.uploaded) errors.push("صورة الإقامة مطلوبة");
+      }
 
-    if (rolesRequiringContract.includes(formState.roleKey || "") && !formState.files?.contract?.uploaded) {
-      errors.push("عقد العمل مطلوب");
-    }
+      if (!(formState.files?.cv?.uploaded || formState.files?.supportingDocument?.uploaded)) errors.push("السيرة الذاتية مطلوبة");
+      if (!formState.files?.jobDescription?.uploaded) errors.push("المسمى الوظيفي مطلوب");
 
-    const rolesRequiringCertFile = [
-      'technicalSupervisor', 'coachU10', 'coachU11', 'coachU12', 'coachU13', 
-      'medicalManager', 'doctor', 'bCoachU12', 'bCoachU13', 'bGeneralSupervisor', 'bPhysiotherapist'
-    ];
-    if (rolesRequiringCertFile.includes(formState.roleKey || "") && !formState.files?.certificate?.uploaded) {
-      errors.push("شهادة التأهيل مطلوبة");
+      if (rolesRequiringContract.includes(formState.roleKey || "") && !formState.files?.contract?.uploaded) {
+        errors.push("عقد العمل مطلوب");
+      }
+
+      const rolesRequiringCertFile = [
+        'technicalSupervisor', 'coachU10', 'coachU11', 'coachU12', 'coachU13',
+        'medicalManager', 'doctor', 'bCoachU12', 'bCoachU13', 'bGeneralSupervisor', 'bPhysiotherapist'
+      ];
+      if (rolesRequiringCertFile.includes(formState.roleKey || "") && !formState.files?.certificate?.uploaded) {
+        errors.push("شهادة التأهيل مطلوبة");
+      }
     }
 
     setFormErrors(errors);
@@ -1318,7 +1321,9 @@ export default function AcademyRegistry() {
                 <span className="material-symbols-outlined text-[#064E3B]">edit_square</span>
                 {editingId ? `تحديث بروفايل: ${formState.roleLabel}` : `إضافة بروفايل: ${formState.roleLabel}`}
               </div>
-              <span className="text-xs text-red-500 font-bold">* جميع الحقول مطلوبة</span>
+              <span className="text-xs text-red-500 font-bold">
+                {STORAGE_ENABLED ? '* جميع الحقول مطلوبة' : '* الحقول الأساسية مطلوبة — المستندات اختيارية حالياً'}
+              </span>
             </h2>
             
             {formErrors.length > 0 && (
@@ -1420,13 +1425,17 @@ export default function AcademyRegistry() {
               
               {/* B. الصورة الشخصية */}
               <div className="space-y-4">
-                <h3 className="text-lg font-bold text-[#064E3B] border-b border-[#E5DED0] pb-2">ب. الصورة الشخصية *</h3>
+                <h3 className="text-lg font-bold text-[#064E3B] border-b border-[#E5DED0] pb-2">
+                  ب. الصورة الشخصية {STORAGE_ENABLED ? '*' : <span className="text-xs font-normal text-[#64748B]">(اختياري حالياً)</span>}
+                </h3>
                 {renderProfilePhotoField(formState.files?.profilePhoto)}
               </div>
 
               {/* C. المستندات المطلوبة */}
               <div className="space-y-4">
-                <h3 className="text-lg font-bold text-[#064E3B] border-b border-[#E5DED0] pb-2">ج. المستندات المطلوبة (جميعها إلزامية)</h3>
+                <h3 className="text-lg font-bold text-[#064E3B] border-b border-[#E5DED0] pb-2">
+                  {STORAGE_ENABLED ? 'ج. المستندات المطلوبة (جميعها إلزامية)' : 'ج. المستندات (اختيارية حالياً — رفع الملفات غير متاح)'}
+                </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   {renderDocumentField("idDocument", "رفع الهوية *", formState.files?.idDocument)}
                   

@@ -1,4 +1,5 @@
 import { appStorage } from "./appStorage";
+import { STORAGE_ENABLED } from "./storageConfig";
 
 export interface FileData {
   name: string;
@@ -228,36 +229,38 @@ export const isPersonComplete = (p: RegistryPerson): boolean => {
 
   if (p.roleKey === 'bGeneralSupervisor' && !p.notes) return false;
 
-  // Files
-  if (!p.files?.profilePhoto?.uploaded) return false;
-  if (!p.files?.idDocument?.uploaded) return false;
-  
-  const isLebanese = 
-    p.nationality?.trim().toLowerCase() === "lebanese" ||
-    p.nationality?.trim() === "لبناني" ||
-    p.nationality?.trim() === "لبنانية" ||
-    p.nationality?.trim() === "لبنان";
+  // File checks — only enforced when Storage is active
+  if (STORAGE_ENABLED) {
+    if (!p.files?.profilePhoto?.uploaded) return false;
+    if (!p.files?.idDocument?.uploaded) return false;
 
-  const isTargetRole = ['owner', 'bOwner', 'bGeneralSupervisor', 'technicalSupervisor'].includes(p.roleKey);
+    const isLebanese =
+      p.nationality?.trim().toLowerCase() === "lebanese" ||
+      p.nationality?.trim() === "لبناني" ||
+      p.nationality?.trim() === "لبنانية" ||
+      p.nationality?.trim() === "لبنان";
 
-  if (isTargetRole) {
-    if (isLebanese && !p.files?.criminalRecord?.uploaded) return false;
-    if (!isLebanese && !p.files?.residencyPermit?.uploaded) return false;
+    const isTargetRole = ['owner', 'bOwner', 'bGeneralSupervisor', 'technicalSupervisor'].includes(p.roleKey);
+
+    if (isTargetRole) {
+      if (isLebanese && !p.files?.criminalRecord?.uploaded) return false;
+      if (!isLebanese && !p.files?.residencyPermit?.uploaded) return false;
+    }
+
+    if (!(p.files?.cv?.uploaded || p.files?.supportingDocument?.uploaded)) return false;
+    if (!p.files?.jobDescription?.uploaded) return false;
+
+    const rolesRequiringContract = [
+      "administrativeManager", "technicalSupervisor", "coachU10", "coachU11", "coachU12", "coachU13", "medicalManager", "doctor"
+    ];
+    if (rolesRequiringContract.includes(p.roleKey) && !p.files?.contract?.uploaded) return false;
+
+    const rolesRequiringCertFile = [
+      'technicalSupervisor', 'coachU10', 'coachU11', 'coachU12', 'coachU13',
+      'medicalManager', 'doctor', 'bCoachU12', 'bCoachU13', 'bGeneralSupervisor', 'bPhysiotherapist'
+    ];
+    if (rolesRequiringCertFile.includes(p.roleKey) && !p.files?.certificate?.uploaded) return false;
   }
-  
-  if (!(p.files?.cv?.uploaded || p.files?.supportingDocument?.uploaded)) return false;
-  if (!p.files?.jobDescription?.uploaded) return false;
-
-  const rolesRequiringContract = [
-    "administrativeManager", "technicalSupervisor", "coachU10", "coachU11", "coachU12", "coachU13", "medicalManager", "doctor"
-  ];
-  if (rolesRequiringContract.includes(p.roleKey) && !p.files?.contract?.uploaded) return false;
-
-  const rolesRequiringCertFile = [
-    'technicalSupervisor', 'coachU10', 'coachU11', 'coachU12', 'coachU13', 
-    'medicalManager', 'doctor', 'bCoachU12', 'bCoachU13', 'bGeneralSupervisor', 'bPhysiotherapist'
-  ];
-  if (rolesRequiringCertFile.includes(p.roleKey) && !p.files?.certificate?.uploaded) return false;
 
   return true;
 };

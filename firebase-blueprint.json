@@ -1,0 +1,45 @@
+{
+  "entities": {
+    "User": {
+      "title": "Academy User",
+      "description": "Academy profile and account information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "academyName": { "type": "string" },
+        "governorate": { "type": "string" },
+        "district": { "type": "string" },
+        "academyPhone": { "type": "string" },
+        "academyEmail": { "type": "string" },
+        "loginEmail": { "type": "string" },
+        "academyLogo": { "type": "string" },
+        "approvedStadiumName": { "type": "string" },
+        "createdAt": { "type": "number" },
+        "lastLoginAt": { "type": "number" }
+      },
+      "required": ["id", "loginEmail"]
+    },
+    "AppProgress": {
+      "title": "Application Progress",
+      "description": "Stores progress for different axes",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "key": { "type": "string" },
+        "data": { "type": "string" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["userId", "key", "data"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile documents"
+    },
+    "/users/{userId}/progress/{key}": {
+      "schema": "AppProgress",
+      "description": "User application progress for each axis"
+    }
+  }
+}

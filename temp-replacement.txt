@@ -1,0 +1,128 @@
+                                                let answerBadge: React.ReactNode = <span className="text-gray-500 text-xs">لم يتم تقديم هذا المتطلب</span>;
+                                                let fileBtn: React.ReactNode = <span className="text-gray-400 text-xs">—</span>;
+
+                                                if (val !== undefined && val !== null) {
+                                                   const TECH_KEYS = ['type', 'uploaded', 'checked', 'fileUrl', 'downloadURL', 'storagePath', 'mimeType', 'createdAt', 'updatedAt', 'id', 'uid', 'ownerId', 'preview', 'empty', 'fromRegistry', 'name', 'fileName', 'roleKey', 'axisKey', 'files', 'fileObj', 'completed'];
+
+                                                   let fileRefs: any[] = [];
+                                                   let dataEntries: [string, string][] = [];
+
+                                                   const extract = (v: any) => {
+                                                     if (!v) return;
+                                                     if (typeof v === 'string' || typeof v === 'number') {
+                                                       dataEntries.push(['القيمة', String(v)]);
+                                                       return;
+                                                     }
+                                                     if (typeof v === 'boolean') {
+                                                       dataEntries.push(['القيمة', v ? 'نعم' : 'لا']);
+                                                       return;
+                                                     }
+                                                     if (Array.isArray(v)) {
+                                                       v.forEach((item, idx) => {
+                                                         if (typeof item === 'object' && item !== null) {
+                                                           if (item.fileUrl || item.downloadURL || item.storagePath || item.preview || item.name) {
+                                                             fileRefs.push(item);
+                                                           } else {
+                                                              Object.entries(item).forEach(([ik, iv]) => {
+                                                                if (TECH_KEYS.includes(ik)) return;
+                                                                dataEntries.push([`${ARABIC_MAPPING[ik] || ik} (${idx + 1})`, String(iv)]);
+                                                              });
+                                                           }
+                                                         } else {
+                                                           dataEntries.push([`عنصر ${idx+1}`, String(item)]);
+                                                         }
+                                                       });
+                                                       return;
+                                                     }
+                                                     if (typeof v === 'object' && v !== null) {
+                                                       if (v.fileUrl || v.downloadURL || v.storagePath || v.preview || v.name || (v.uploaded === true)) {
+                                                         if (v.fileUrl || v.downloadURL || v.storagePath || v.preview || v.name) fileRefs.push(v);
+                                                       }
+                                                       Object.entries(v).forEach(([ik, iv]) => {
+                                                         if (TECH_KEYS.includes(ik)) return;
+                                                         if (ik === 'file' || ik === 'files' || ik === 'photos' || ik === 'documents' || ik === 'uploadedFiles' || ik === 'attachments') {
+                                                           if (Array.isArray(iv)) {
+                                                             iv.forEach((f: any) => { if(f) fileRefs.push(f) });
+                                                           } else if (typeof iv === 'object' && iv !== null) {
+                                                             if ((iv as any).fileUrl || (iv as any).downloadURL || (iv as any).storagePath || (iv as any).preview || (iv as any).name) fileRefs.push(iv);
+                                                             else Object.values(iv).forEach((f: any) => { if (f && typeof f === 'object' && (f.fileUrl || f.downloadURL || f.storagePath || f.preview || f.name)) fileRefs.push(f); });
+                                                           }
+                                                         } else if (typeof iv === 'object' && iv !== null) {
+                                                           if (Array.isArray(iv)) {
+                                                             iv.forEach(sub => extract(sub));
+                                                           } else {
+                                                             extract(iv);
+                                                           }
+                                                         } else {
+                                                           if (iv !== '' && iv !== null && iv !== undefined) {
+                                                              dataEntries.push([ARABIC_MAPPING[ik] || ik, String(iv)]);
+                                                           }
+                                                         }
+                                                       });
+                                                     }
+                                                   };
+
+                                                   extract(val);
+
+                                                   if (val.type === 'checkbox' || val === true || val === false) {
+                                                      const isChecked = val.type === 'checkbox' ? val.checked : val === true;
+                                                      const isEmpty = val.type === 'checkbox' ? val.empty : false;
+                                                      if (isEmpty) {
+                                                        answerBadge = <span className="text-gray-500 text-xs">لم يتم تقديم هذا المتطلب</span>;
+                                                      } else {
+                                                        answerBadge = isChecked ? <span className="text-[#064E3B] bg-[#064E3B]/10 px-2 py-1 rounded inline-block border border-[#064E3B]/20 text-xs whitespace-nowrap">نعم / تم التأكيد</span> : <span className="text-red-500 whitespace-nowrap text-xs">لا / غير مكتمل</span>;
+                                                      }
+                                                   } else if (val.fromRegistry && val.data) {
+                                                      answerBadge = <span className="text-sm text-gray-800"><span dir="ltr" className="ml-1 inline-block">{val.data}</span> <span className="text-[#C9A227] bg-[#C9A227]/10 px-2 py-1 rounded inline-block border border-[#C9A227]/20 text-xs whitespace-nowrap font-bold">مستخرج من السجل</span></span>;
+                                                   } else if (val.fromRegistry) {
+                                                      answerBadge = <span className="text-[#C9A227] bg-[#C9A227]/10 px-2 py-1 rounded inline-block border border-[#C9A227]/20 text-xs font-bold whitespace-nowrap shrink-0">مستخرج من السجل</span>;
+                                                   } else if (dataEntries.length === 0 && fileRefs.length > 0) {
+                                                      answerBadge = <span className="text-[#064E3B] bg-[#064E3B]/10 px-2 py-1 rounded inline-block border border-[#064E3B]/20 text-xs font-bold whitespace-nowrap shrink-0">مكتمل / تم الرفع</span>;
+                                                   } else if (dataEntries.length === 0 && !val.empty && fileRefs.length === 0) {
+                                                      answerBadge = <span className="text-gray-500 text-xs">لم يتم تقديم هذا المتطلب</span>;
+                                                   }
+
+                                                   if (dataEntries.length > 0 && !(val.type === 'checkbox' && dataEntries.length === 1)) {
+                                                      let filteredEntries = dataEntries;
+                                                      if (dataEntries.length > 1) {
+                                                        filteredEntries = dataEntries.filter(e => e[0] !== 'القيمة');
+                                                      }
+                                                      const visibleEntries = filteredEntries.slice(0, 5);
+                                                      answerBadge = (
+                                                        <div className="flex flex-col gap-1 text-xs text-gray-800">
+                                                          {visibleEntries.map((e, idx) => (
+                                                             <div key={idx}><span className="text-gray-500 font-bold">{e[0]}:</span> {e[1]}</div>
+                                                          ))}
+                                                          {filteredEntries.length > 5 && (
+                                                            <details className="mt-1 group">
+                                                              <summary className="text-[#064E3B] font-bold text-[10px] underline cursor-pointer w-fit hover:text-[#C9A227] list-none">
+                                                                 عرض التفاصيل ({filteredEntries.length - 5}+)
+                                                              </summary>
+                                                              <div className="flex flex-col gap-1 bg-gray-50 p-2 rounded border border-gray-100 mt-2">
+                                                                {filteredEntries.slice(5).map((e, idx) => (
+                                                                   <div key={idx+5}><span className="text-gray-500 font-bold">{e[0]}:</span> {e[1]}</div>
+                                                                ))}
+                                                              </div>
+                                                            </details>
+                                                          )}
+                                                        </div>
+                                                      );
+                                                   }
+
+                                                   if (fileRefs.length > 0) {
+                                                     fileBtn = (
+                                                       <div className="flex flex-col gap-2 mx-auto justify-center">
+                                                         {fileRefs.map((f, i) => (
+                                                            (f.storagePath || f.downloadURL || f.fileUrl || f.preview) ? (
+                                                               <button key={i} onClick={(e) => handleFilePreview(e, title, academyData?.academyName || '', f)} className="inline-flex w-fit mx-auto items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-800 px-2 py-1 rounded text-xs font-bold transition-colors whitespace-nowrap">
+                                                                 <span className="material-symbols-outlined text-[14px]">visibility</span>
+                                                                 {fileRefs.length > 1 ? \`عرض الملف \${i+1}\` : 'عرض الملف'}
+                                                               </button>
+                                                            ) : (
+                                                               <span key={i} className="text-[10px] text-gray-400 block truncate max-w-[100px] mx-auto bg-gray-50 px-2 py-1 rounded border border-gray-100" title={f.name || 'ملف غير متاح'}>{f.name || 'رابط غير متوفر'}</span>
+                                                            )
+                                                         ))}
+                                                       </div>
+                                                     );
+                                                   }
+                                                }

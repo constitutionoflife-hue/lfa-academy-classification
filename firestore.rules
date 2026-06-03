@@ -1,0 +1,49 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
+      let email = ('email' in request.auth.token) ? request.auth.token.email : '';
+      return isSignedIn() && (
+        email == 'constitutionoflife@gmail.com' || 
+        email == 'grassroots@the-lfa.com.lb' ||
+        (userDoc != null && (
+          userDoc.data.get('role', '') == 'admin' || 
+          userDoc.data.get('isAdmin', false) == true || 
+          userDoc.data.get('loginEmail', '') == 'grassroots@the-lfa.com.lb'
+        ))
+      );
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create, update: if isOwner(userId) || isAdmin();
+      allow delete: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      
+      match /progress/{key} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+      
+      match /adminReviews/{key} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+      
+      match /uploads/{key} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+    }
+  }
+}

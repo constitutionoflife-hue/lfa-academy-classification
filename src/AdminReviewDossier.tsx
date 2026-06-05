@@ -12,6 +12,7 @@ import {
 import { db } from "./lib/firebase";
 import { AcademyAccount } from "./types";
 import { FILE_KEYS } from "./lib/registry";
+import PdfViewer from "./components/PdfViewer";
 
 const FIELD_LABELS: Record<string, string> = {
   hasMinimumPitchSize: "تتمتع الملاعب بمساحات كافية؟",
@@ -6791,20 +6792,18 @@ export default function AdminReviewDossier() {
                   }
 
                   if (isPdf) {
-                    // url is already a blob:// URL (fetched in resolveAndSet)
                     const filename = previewFile.fileObj?.name || previewFile.fileObj?.originalName || previewFile.title || "file.pdf";
                     return (
                       <div className="w-full h-full flex flex-col gap-3" dir="rtl">
+                        {/* Action buttons */}
                         <div className="flex items-center justify-center gap-3 shrink-0">
-                          {/* Open in new tab — uses blob URL, works in all environments */}
                           <button
                             onClick={() => window.open(url, "_blank", "noopener,noreferrer")}
                             className="inline-flex items-center gap-2 bg-[#064E3B] text-white px-5 py-2 rounded-lg font-bold text-sm hover:bg-[#022C22] transition-colors shadow"
                           >
                             <span className="material-symbols-outlined text-[18px]">open_in_new</span>
-                            فتح الملف في نافذة جديدة
+                            فتح في نافذة جديدة
                           </button>
-                          {/* Download — uses blob URL, no external navigation */}
                           <button
                             onClick={() => triggerBlobDownload(url, previewFile.downloadUrl || url, filename)}
                             className="inline-flex items-center gap-2 bg-gray-200 text-gray-700 px-5 py-2 rounded-lg font-bold text-sm hover:bg-gray-300 transition-colors"
@@ -6813,12 +6812,14 @@ export default function AdminReviewDossier() {
                             تحميل
                           </button>
                         </div>
-                        <iframe
-                          src={url}
-                          className="w-full flex-1 min-h-[480px] border-0 rounded-lg shadow-sm bg-white"
-                          title={previewFile.title}
-                          onError={(e) => { (e.currentTarget as HTMLIFrameElement).style.display = 'none'; }}
-                        />
+                        {/*
+                          PDF.js renders each page to <canvas>.
+                          This bypasses Chrome's PDF plugin which refuses
+                          to render inside <iframe> (any URL type).
+                        */}
+                        <div className="flex-1 overflow-y-auto">
+                          <PdfViewer src={url} />
+                        </div>
                       </div>
                     );
                   }

@@ -853,22 +853,44 @@ export default function AdminReviewDossier() {
         detectedKind = "doc";
       }
 
-      // Fix 2: convert PDF/doc source to Blob URL for iframe compatibility.
-      // - data: URIs are blocked by CSP in iframes
-      // - https:// Firebase Storage URLs show black (browser blocks cross-origin PDF framing)
-      // Blob URLs are always same-origin → iframes render them correctly.
+      // Convert PDF/doc to a same-origin Blob URL so PDF.js can load it.
+      // Strategy 1: plain fetch() — works when CORS is configured on Storage.
+      // Strategy 2: Firebase Storage SDK getBlob() — bypasses CORS entirely
+      //             by using the authenticated Firebase SDK. Falls back to this
+      //             automatically when fetch() is blocked.
       if (
         resolvedSource &&
         (detectedKind === "pdf" || detectedKind === "doc") &&
         (resolvedSource.startsWith("data:") || resolvedSource.startsWith("https://"))
       ) {
+        let blobConverted = false;
+
+        // Strategy 1: plain fetch
         try {
           const res = await fetch(resolvedSource);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const blob = await res.blob();
-          downloadSource = downloadSource || resolvedSource; // keep original for download button
+          downloadSource = downloadSource || resolvedSource;
           resolvedSource = URL.createObjectURL(blob);
-        } catch {
-          // Fetch failed — keep original URL; "فتح في نافذة جديدة" still works
+          blobConverted = true;
+        } catch (fetchErr) {
+          console.warn("fetch() failed for PDF preview, trying Firebase SDK:", fetchErr);
+        }
+
+        // Strategy 2: Firebase Storage SDK — handles auth + CORS automatically
+        if (!blobConverted && fileObj?.storagePath) {
+          try {
+            const { ref: storageRef, getBlob: sdkGetBlob } = await import("firebase/storage");
+            const { storage: fbStorage } = await import("./lib/firebase");
+            const sRef = storageRef(fbStorage, fileObj.storagePath);
+            const blob = await sdkGetBlob(sRef);
+            downloadSource = downloadSource || resolvedSource;
+            resolvedSource = URL.createObjectURL(blob);
+            blobConverted = true;
+          } catch (sdkErr) {
+            console.error("Firebase SDK getBlob() also failed:", sdkErr);
+            // resolvedSource stays as the original URL — PdfViewer will show an error
+          }
         }
       }
 

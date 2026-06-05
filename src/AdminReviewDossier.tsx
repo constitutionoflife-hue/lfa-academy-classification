@@ -893,6 +893,45 @@ export default function AdminReviewDossier() {
     resolveAndSet();
   };
 
+  /**
+   * Download a file using its blob URL (already fetched for the iframe) or by
+   * fetching the Firebase Storage URL on demand. This avoids cross-origin URL
+   * navigation which is blocked in some preview/sandbox environments.
+   */
+  const triggerBlobDownload = async (
+    blobOrPreviewUrl: string,
+    fallbackUrl: string,
+    filename: string,
+  ) => {
+    const name = filename || "file";
+    // Prefer the blob URL (already in memory for PDFs)
+    const src = blobOrPreviewUrl?.startsWith("blob:") ? blobOrPreviewUrl : null;
+    if (src) {
+      const a = document.createElement("a");
+      a.href = src;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      return;
+    }
+    // Otherwise fetch on demand and create a temporary blob URL
+    try {
+      const res = await fetch(fallbackUrl || blobOrPreviewUrl);
+      const blob = await res.blob();
+      const tmp = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = tmp;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(tmp);
+    } catch {
+      window.open(fallbackUrl || blobOrPreviewUrl, "_blank", "noopener,noreferrer");
+    }
+  };
+
   const handleFinalDecision = async () => {
     if (!academyId) return;
     setSavingReview(true);
@@ -6678,15 +6717,18 @@ export default function AdminReviewDossier() {
                 {previewFile.title}
               </h3>
               <div className="flex items-center gap-2">
-                {previewFile.url !== "missing" && (
-                  <a
-                    href={previewFile.downloadUrl || previewFile.url}
-                    download={previewFile.title}
+                {previewFile.url !== "missing" && previewFile.url !== "loading" && (
+                  <button
+                    onClick={() => triggerBlobDownload(
+                      previewFile.url,
+                      previewFile.downloadUrl || previewFile.url,
+                      previewFile.fileObj?.name || previewFile.fileObj?.originalName || previewFile.title || "file"
+                    )}
                     className="w-10 h-10 rounded-full flex items-center justify-center bg-gray-200 text-gray-700 hover:bg-[#064E3B] hover:text-white transition-colors"
                     title="تحميل"
                   >
                     <span className="material-symbols-outlined">download</span>
-                  </a>
+                  </button>
                 )}
                 <button
                   onClick={() => setPreviewFile(null)}
@@ -6749,27 +6791,27 @@ export default function AdminReviewDossier() {
                   }
 
                   if (isPdf) {
+                    // url is already a blob:// URL (fetched in resolveAndSet)
+                    const filename = previewFile.fileObj?.name || previewFile.fileObj?.originalName || previewFile.title || "file.pdf";
                     return (
                       <div className="w-full h-full flex flex-col gap-3" dir="rtl">
-                        {/* Fix 3: always show open-in-new-tab as reliable fallback */}
                         <div className="flex items-center justify-center gap-3 shrink-0">
-                          <a
-                            href={previewFile.downloadUrl || url}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                          {/* Open in new tab — uses blob URL, works in all environments */}
+                          <button
+                            onClick={() => window.open(url, "_blank", "noopener,noreferrer")}
                             className="inline-flex items-center gap-2 bg-[#064E3B] text-white px-5 py-2 rounded-lg font-bold text-sm hover:bg-[#022C22] transition-colors shadow"
                           >
                             <span className="material-symbols-outlined text-[18px]">open_in_new</span>
                             فتح الملف في نافذة جديدة
-                          </a>
-                          <a
-                            href={previewFile.downloadUrl || url}
-                            download
+                          </button>
+                          {/* Download — uses blob URL, no external navigation */}
+                          <button
+                            onClick={() => triggerBlobDownload(url, previewFile.downloadUrl || url, filename)}
                             className="inline-flex items-center gap-2 bg-gray-200 text-gray-700 px-5 py-2 rounded-lg font-bold text-sm hover:bg-gray-300 transition-colors"
                           >
                             <span className="material-symbols-outlined text-[18px]">download</span>
                             تحميل
-                          </a>
+                          </button>
                         </div>
                         <iframe
                           src={url}
@@ -6783,19 +6825,18 @@ export default function AdminReviewDossier() {
 
                   const isDoc = finalKind === "doc";
                   if (isDoc) {
+                    const docFilename = previewFile.fileObj?.name || previewFile.fileObj?.originalName || previewFile.title || "file.docx";
                     const viewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(previewFile.downloadUrl || url)}&embedded=true`;
                     return (
                       <div className="w-full h-full flex flex-col gap-3" dir="rtl">
                         <div className="flex items-center justify-center gap-3 shrink-0">
-                          <a
-                            href={previewFile.downloadUrl || url}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                          <button
+                            onClick={() => triggerBlobDownload(url, previewFile.downloadUrl || url, docFilename)}
                             className="inline-flex items-center gap-2 bg-[#064E3B] text-white px-5 py-2 rounded-lg font-bold text-sm hover:bg-[#022C22] transition-colors shadow"
                           >
-                            <span className="material-symbols-outlined text-[18px]">open_in_new</span>
-                            فتح الملف في نافذة جديدة
-                          </a>
+                            <span className="material-symbols-outlined text-[18px]">download</span>
+                            تحميل الملف
+                          </button>
                         </div>
                         <iframe
                           src={viewerUrl}

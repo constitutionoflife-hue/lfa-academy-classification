@@ -11,6 +11,36 @@ import { doc, getDoc, updateDoc, getDocs, collection } from "firebase/firestore"
 import { db } from "./lib/firebase";
 import { AcademyAccount } from "./types";
 
+// Defined outside the component so they can be used in lazy useState initializers
+const AXES_A = [
+  { id: "leadership", name: "القيادة", route: "/classification/a/leadership", storageKey: "classificationA_leadership", isBuilt: true },
+  { id: "planning", name: "التخطيط", route: "/classification/a/planning", storageKey: "classificationA_planning", isBuilt: true },
+  { id: "organization", name: "التنظيم", route: "/classification/a/organization", storageKey: "classificationA_organization", isBuilt: true },
+  { id: "technical", name: "الجانب الفني", route: "/classification/a/technical", storageKey: "classificationA_technical", isBuilt: true },
+  { id: "budget", name: "الميزانية", route: "/classification/a/budget", storageKey: "classificationA_budget", isBuilt: true },
+  { id: "facilities", name: "الملعب والمرافق", route: "/classification/a/facilities", storageKey: "classificationA_facilities", isBuilt: true },
+  { id: "health", name: "الصحة", route: "/classification/a/health", storageKey: "classificationA_health", isBuilt: true },
+  { id: "care", name: "الرعاية والتعليم", route: "/classification/a/safeguarding", storageKey: "classificationA_safeguarding", isBuilt: true },
+  { id: "equipment", name: "المعدات والتجهيزات", route: "/classification/a/equipment", storageKey: "classificationA_equipment", isBuilt: true },
+  { id: "social", name: "التواصل الاجتماعي", route: "/classification/a/social-media", storageKey: "classificationA_social_media", isBuilt: true },
+];
+
+const AXES_B = [
+  { id: "leadership", name: "القيادة", route: "/classification/b/leadership", storageKey: "classificationB_leadership", isBuilt: true },
+  { id: "planning", name: "التخطيط", route: "/classification/b/planning", storageKey: "classificationB_planning", isBuilt: true },
+  { id: "organization", name: "التنظيم", route: "/classification/b/organization", storageKey: "classificationB_organization", isBuilt: true },
+  { id: "technical", name: "الجانب الفني", route: "/classification/b/technical", storageKey: "classificationB_technical", isBuilt: true },
+  { id: "facilities", name: "الملعب والمرافق الأخرى", route: "/classification/b/facilities", storageKey: "classificationB_facilities", isBuilt: true },
+  { id: "care", name: "الرعاية والتعليم", route: "/classification/b/safeguarding", storageKey: "classificationB_safeguarding", isBuilt: true },
+  { id: "equipment", name: "المعدات والتجهيزات", route: "/classification/b/equipment", storageKey: "classificationB_equipment", isBuilt: true },
+];
+
+function getAxesForType(cls: string | null) {
+  if (cls === 'B') return AXES_B;
+  if (cls === 'A') return AXES_A;
+  return AXES_A; // default
+}
+
 export default function AcademyDashboard() {
   const navigate = useNavigate();
   const [academyName, setAcademyName] = useState(() => {
@@ -33,40 +63,28 @@ export default function AcademyDashboard() {
     }
     return null;
   });
-  const [selectedClassification, setSelectedClassification] = useState<string | null>(null);
+
+  // Lazy-initialize from localStorage so the first render already shows the
+  // correct customized dashboard — no flash of the selection screen on sign-in.
+  const [selectedClassification, setSelectedClassification] = useState<string | null>(() =>
+    appStorage.getItem("selectedApplicationType")
+  );
+  const [activeAxes, setActiveAxes] = useState<any[]>(() =>
+    getAxesForType(appStorage.getItem("selectedApplicationType"))
+  );
+
   const [submitting, setSubmitting] = useState(false);
   const [applicationStatus, setApplicationStatus] = useState<string>('draft');
   const [registryCounts, setRegistryCounts] = useState({ management: 0, technical: 0, medical: 0 });
   const [appStarted, setAppStarted] = useState(false);
-  const [activeAxes, setActiveAxes] = useState<any[]>([]);
   const [showChangeConfirm, setShowChangeConfirm] = useState(false);
   const [adminReviews, setAdminReviews] = useState<Record<string, any>>({});
   const [adminStatus, setAdminStatus] = useState<string | null>(null);
   const [adminFinalNote, setAdminFinalNote] = useState<string | null>(null);
 
-  // Status for each axis
-  const axesA = [
-    { id: "leadership", name: "القيادة", route: "/classification/a/leadership", storageKey: "classificationA_leadership", isBuilt: true },
-    { id: "planning", name: "التخطيط", route: "/classification/a/planning", storageKey: "classificationA_planning", isBuilt: true },
-    { id: "organization", name: "التنظيم", route: "/classification/a/organization", storageKey: "classificationA_organization", isBuilt: true },
-    { id: "technical", name: "الجانب الفني", route: "/classification/a/technical", storageKey: "classificationA_technical", isBuilt: true },
-    { id: "budget", name: "الميزانية", route: "/classification/a/budget", storageKey: "classificationA_budget", isBuilt: true },
-    { id: "facilities", name: "الملعب والمرافق", route: "/classification/a/facilities", storageKey: "classificationA_facilities", isBuilt: true },
-    { id: "health", name: "الصحة", route: "/classification/a/health", storageKey: "classificationA_health", isBuilt: true },
-    { id: "care", name: "الرعاية والتعليم", route: "/classification/a/safeguarding", storageKey: "classificationA_safeguarding", isBuilt: true },
-    { id: "equipment", name: "المعدات والتجهيزات", route: "/classification/a/equipment", storageKey: "classificationA_equipment", isBuilt: true },
-    { id: "social", name: "التواصل الاجتماعي", route: "/classification/a/social-media", storageKey: "classificationA_social_media", isBuilt: true },
-  ];
-
-  const axesB = [
-    { id: "leadership", name: "القيادة", route: "/classification/b/leadership", storageKey: "classificationB_leadership", isBuilt: true },
-    { id: "planning", name: "التخطيط", route: "/classification/b/planning", storageKey: "classificationB_planning", isBuilt: true },
-    { id: "organization", name: "التنظيم", route: "/classification/b/organization", storageKey: "classificationB_organization", isBuilt: true },
-    { id: "technical", name: "الجانب الفني", route: "/classification/b/technical", storageKey: "classificationB_technical", isBuilt: true },
-    { id: "facilities", name: "الملعب والمرافق الأخرى", route: "/classification/b/facilities", storageKey: "classificationB_facilities", isBuilt: true },
-    { id: "care", name: "الرعاية والتعليم", route: "/classification/b/safeguarding", storageKey: "classificationB_safeguarding", isBuilt: true },
-    { id: "equipment", name: "المعدات والتجهيزات", route: "/classification/b/equipment", storageKey: "classificationB_equipment", isBuilt: true },
-  ];
+  // Keep local aliases for backward compat with code below that still refs axesA/axesB
+  const axesA = AXES_A;
+  const axesB = AXES_B;
 
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -89,7 +107,16 @@ export default function AcademyDashboard() {
           setAcademyName(account.academyName || "");
           setAcademyLogo(account.academyLogo || null);
           if (account.applicationStatus) setApplicationStatus(account.applicationStatus);
-          
+
+          // Restore classification from Firestore when localStorage is empty
+          // (e.g. fresh sign-in on a new device after restoreCloudToLocal ran)
+          if (account.classificationType && !appStorage.getItem("selectedApplicationType")) {
+            const cls = account.classificationType;
+            setSelectedClassification(cls);
+            setActiveAxes(getAxesForType(cls));
+            appStorage.setItem("selectedApplicationType", cls);
+          }
+
           setAdminStatus(account.adminStatus || null);
           setAdminFinalNote(account.adminFinalNote || null);
 

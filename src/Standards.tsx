@@ -228,7 +228,7 @@ export default function Standards() {
                 </div>
                 <div className="space-y-2 text-right">
                   <p className="text-white/60 text-sm">المساهمة السنوية</p>
-                  <p className="text-4xl font-bold text-white">2,500 دولار أمريكي <span className="text-lg text-white/50 font-normal">سنويًا</span></p>
+                  <p className="text-4xl font-bold text-white">2,400 دولار أمريكي <span className="text-lg text-white/50 font-normal">سنويًا</span></p>
                 </div>
                 <p className="text-white/80 font-medium leading-relaxed border-b border-white/10 pb-6 text-right">
                   مناسب للأكاديميات التي تمتلك جاهزية إدارية وفنية وتنظيمية أعلى، وتسعى للمشاركة ضمن المسار الوطني للأكاديميات.
@@ -264,7 +264,7 @@ export default function Standards() {
                 </div>
                 <div className="space-y-2 text-right">
                   <p className="text-[#64748B] text-sm">المساهمة السنوية</p>
-                  <p className="text-4xl font-bold text-[#064E3B]">500 دولار أمريكي <span className="text-lg text-[#64748B] font-normal">سنويًا</span></p>
+                  <p className="text-4xl font-bold text-[#064E3B]">600 دولار أمريكي <span className="text-lg text-[#64748B] font-normal">سنويًا</span></p>
                 </div>
                 <p className="text-[#64748B] font-medium leading-relaxed border-b border-[#E5DED0] pb-6 text-right">
                   مناسب للأكاديميات التي تستوفي الحد الأدنى من المعايير وتسعى للدخول في مسار تطوير تدريجي ومنظم.

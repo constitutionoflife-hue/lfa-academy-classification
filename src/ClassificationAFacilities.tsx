@@ -4,6 +4,7 @@ import AppHeader from "./components/AppHeader";
 import AxisTopNav from "./components/AxisTopNav";
 import { appStorage } from "./lib/appStorage";
 import { uploadFileAndReturnMetadata } from "./lib/fileUpload";
+import { AxisSummary } from "./components/AxisSummary";
 
 const DEFAULT_DATA = {
   pitchSpecifications: {
@@ -1259,67 +1260,43 @@ export default function ClassificationAFacilities() {
           </div>
         </div>
 
-        {/* Completion Summary */}
-        <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-[#E5DED0] mb-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-4 text-[#022C22]">
-              <div
-                className={`w-16 h-16 rounded-full flex items-center justify-center font-black text-xl border-4 ${progress.percentage === 100 ? "bg-green-100 border-green-500 text-green-700" : "bg-[#FFF9E6] border-[#C9A227] text-[#C9A227]"}`}
-              >
-                {progress.percentage}%
-              </div>
-              <div>
-                <h3 className="font-black text-xl mb-1">ملخص المحور</h3>
-                <p className="text-[#64748B] text-sm font-bold">
-                  {progress.percentage === 100
-                    ? "اكتملت جميع متطلبات هذا المحور"
-                    : "يرجى إكمال المتطلبات المتبقية لإنهاء المحور"}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Actions */}
-        <div className="flex flex-col md:flex-row items-center gap-4 pt-10 border-t border-[#E5DED0]">
-          <button
-            onClick={() => {
-              saveProgress();
-              setShowToast(true);
-              setTimeout(() => setShowToast(false), 3000);
-            }}
-            className="w-full md:w-auto px-8 py-4 rounded-2xl font-bold bg-white border border-[#E5DED0] text-[#64748B] hover:text-[#064E3B] hover:border-[#064E3B] transition-all text-center flex items-center justify-center gap-2 shadow-sm order-2 md:order-1 mr-auto"
+        <AxisSummary
+          title="ملخص محور الملعب والمرافق"
+          icon="stadium"
+          items={[
+            { label: "مواصفات الملعب (المساحة، الأرضية، الإنارة، الصور)", isActive: (() => { const s1 = data.pitchSpecifications; return !!(s1.hasMinimumPitchSize === "نعم" && s1.actualPitchSize?.trim() !== "" && s1.pitchSurfaceQuality !== "" && s1.pitchSurfacePhoto?.uploaded); })() },
+            { label: "مرافق اللاعبين والمدربين (غرف تبديل، مقاعد فنية، إسعاف)", isActive: (() => { const s2 = data.playerCoachFacilities; return !!(s2.hasChangingRooms === "نعم" && s2.changingRoomsPhotos?.uploaded && s2.hasTechnicalBenches === "نعم" && s2.hasFirstAidPoint === "نعم"); })() },
+            { label: "المرافق المساندة (مواقف، انتظار أهالي، مشاهدة آمنة، نقطة إدارية)", isActive: (() => { const s3 = data.supportingFacilities; return !!(s3.hasParkingAccess === "نعم" && s3.hasParentsWaitingArea === "نعم" && s3.hasSafeViewingArea === "نعم" && s3.hasAdministrativePoint === "نعم"); })() },
+            { label: "حق استخدام الملعب (حق قانوني، مدة، جلسات، وثيقة)", isActive: (() => { const s4 = data.pitchUsageRight; return !!(s4.hasLegalUsageRight === "نعم" && s4.pitchName?.trim() !== "" && s4.pitchUsageDuration !== "" && s4.hasEnoughWeeklySessions === "نعم" && s4.pitchUsageRightDocument?.uploaded); })() },
+          ]}
+          percentage={progress.percentage}
+          status={progress.percentage === 100 ? "مكتمل" : progress.percentage >= 50 ? "مكتمل جزئيًا" : progress.percentage > 0 ? "قيد التعبئة" : "لم يبدأ"}
+          subTitle={`${progress.completeSections} من ${progress.totalSections} أقسام مكتملة`}
+          backLink="/dashboard"
+          onSave={saveProgress}
+        >
+          <Link
+            to="/classification/a/budget"
+            className="px-6 py-3.5 bg-white text-[#064E3B] border-2 border-[#064E3B] hover:bg-[#064E3B]/5 rounded-xl font-bold transition-all text-center flex items-center justify-center gap-2"
           >
-            <span className="material-symbols-outlined text-[20px]">save</span>
-            حفظ كمسودة
+            <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+            السابق: الميزانية
+          </Link>
+          <button
+            onClick={saveProgress}
+            className="px-6 py-3.5 bg-[#C9A227] text-white hover:bg-[#B38D1F] rounded-xl font-bold flex items-center justify-center gap-2"
+          >
+            <span className="material-symbols-outlined">save</span>
+            حفظ التقدم
           </button>
-          <div className="w-full md:w-auto flex flex-col sm:flex-row gap-4 order-1 md:order-2">
-            <Link
-              to="/classification/a/budget"
-              className="w-full sm:w-auto px-8 py-4 rounded-2xl font-bold bg-white border border-[#E5DED0] text-[#64748B] hover:text-[#022C22] hover:bg-gray-50 transition-all text-center flex items-center justify-center gap-2"
-            >
-              <span className="material-symbols-outlined text-[20px]">
-                chevron_right
-              </span>
-              السابق: الميزانية
-            </Link>
-            <Link
-              to="/dashboard"
-              className="w-full sm:w-auto px-8 py-4 rounded-2xl font-bold bg-white border border-[#E5DED0] text-[#64748B] hover:text-[#022C22] hover:bg-gray-50 transition-all text-center flex items-center justify-center gap-2"
-            >
-              الرجوع للوحة
-            </Link>
-            <Link
-              to="/classification/a/health"
-              className="w-full sm:w-auto px-10 py-4 rounded-2xl font-bold bg-[#064E3B] text-white hover:bg-[#022C22] transition-all flex items-center justify-center gap-3 shadow-lg hover:shadow-xl active:scale-95"
-            >
-              التالي: الصحة
-              <span className="material-symbols-outlined text-[20px]">
-                chevron_left
-              </span>
-            </Link>
-          </div>
-        </div>
+          <Link
+            to="/classification/a/health"
+            className="px-6 py-3.5 bg-[#064E3B] text-white hover:bg-[#022C22] rounded-xl font-bold flex items-center justify-center gap-2 shadow-md"
+          >
+            التالي: الصحة
+            <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+          </Link>
+        </AxisSummary>
       </main>
     </div>
   );

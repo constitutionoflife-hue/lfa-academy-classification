@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import AppHeader from "./components/AppHeader";
 import AxisTopNav from "./components/AxisTopNav";
 import { appStorage } from "./lib/appStorage";
+import { AxisSummary } from "./components/AxisSummary";
 
 const BASE_EXPENSES_KEYS = [
   { id: "tech_salaries", label: "رواتب الجهاز الفني" },
@@ -403,64 +404,42 @@ export default function ClassificationABudget() {
           />
         </div>
 
-        <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-[#E5DED0] mb-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-4 text-[#022C22]">
-              <div
-                className={`w-16 h-16 rounded-full flex items-center justify-center font-black text-xl border-4 ${totals.percentage === 100 ? "bg-green-100 border-green-500 text-green-700" : "bg-[#FFF9E6] border-[#C9A227] text-[#C9A227]"}`}
-              >
-                {totals.percentage}%
-              </div>
-              <div>
-                <h3 className="font-black text-xl mb-1">ملخص المحور</h3>
-                <p className="text-[#64748B] text-sm font-bold">
-                  {totals.percentage === 100
-                    ? "اكتملت جميع متطلبات هذا المحور"
-                    : "يرجى إكمال المتطلبات المتبقية لإنهاء المحور"}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Actions */}
-        <div className="flex flex-col md:flex-row items-center gap-4 pt-10 border-t border-[#E5DED0]">
-          <div className="w-full md:w-auto flex flex-col sm:flex-row gap-4 md:mr-auto">
-            <Link
-              to="/classification/a/technical"
-              className="w-full sm:w-auto px-8 py-4 rounded-2xl font-bold bg-white border border-[#E5DED0] text-[#64748B] hover:text-[#022C22] hover:bg-gray-50 transition-all text-center flex items-center justify-center gap-2"
-            >
-              <span className="material-symbols-outlined text-[20px]">
-                chevron_right
-              </span>
-              السابق: الجانب الفني
-            </Link>
-            <button
-              onClick={() => saveProgress(data)}
-              className="w-full sm:w-auto px-8 py-4 rounded-2xl font-bold bg-white border border-[#E5DED0] text-[#64748B] hover:text-[#064E3B] hover:border-[#064E3B] transition-all text-center flex items-center justify-center gap-2 shadow-sm"
-            >
-              <span className="material-symbols-outlined text-[20px]">
-                save
-              </span>
-              حفظ كمسودة
-            </button>
-            <Link
-              to="/dashboard"
-              className="w-full sm:w-auto px-8 py-4 rounded-2xl font-bold bg-white border border-[#E5DED0] text-[#64748B] hover:text-[#022C22] hover:bg-gray-50 transition-all text-center flex items-center justify-center gap-2"
-            >
-              الرجوع للوحة
-            </Link>
-            <Link
-              to="/classification/a/facilities"
-              className="w-full sm:w-auto px-10 py-4 rounded-2xl font-bold bg-[#064E3B] text-white hover:bg-[#022C22] transition-all flex items-center justify-center gap-3 shadow-lg hover:shadow-xl active:scale-95"
-            >
-              التالي: الملعب والمرافق
-              <span className="material-symbols-outlined text-[20px]">
-                chevron_left
-              </span>
-            </Link>
-          </div>
-        </div>
+        <AxisSummary
+          title="ملخص محور الميزانية المالية"
+          icon="account_balance"
+          items={[
+            { label: "المعلومات العامة (الموسم، اللاعبون، الفئات، المدربون، الإداريون)", isActive: !!(data.generalInfo?.season && Number(data.generalInfo?.playersCount) > 0 && Number(data.generalInfo?.ageGroupsCount) > 0 && Number(data.generalInfo?.coachesCount) > 0 && Number(data.generalInfo?.adminsCount) > 0) },
+            { label: "المصروفات الأساسية (رواتب، ملعب، رسوم، تأمين، تجهيزات، أنشطة)", isActive: totals.coveredBaseExpensesCount > 0 },
+            { label: "مصادر الدخل (اشتراكات اللاعبين أو الرعايات أو مساهمة المالك)", isActive: Object.values(data.baseIncomeSources || {}).some((item: any) => Number(item?.value || 0) > 0) || (data.extraIncomeSources || []).some((ex: any) => Number(ex.value || 0) > 0) },
+          ]}
+          percentage={totals.percentage}
+          status={totals.status}
+          subTitle={totals.percentage === 100 ? "اكتملت جميع متطلبات هذا المحور" : `${totals.totalReqs - totals.completed} متطلب متبقٍ من أصل ${totals.totalReqs}`}
+          backLink="/dashboard"
+          onSave={() => saveProgress(data)}
+        >
+          <Link
+            to="/classification/a/technical"
+            className="px-6 py-3.5 bg-white text-[#064E3B] border-2 border-[#064E3B] hover:bg-[#064E3B]/5 rounded-xl font-bold transition-all text-center flex items-center justify-center gap-2"
+          >
+            <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+            السابق: الجانب الفني
+          </Link>
+          <button
+            onClick={() => saveProgress(data)}
+            className="px-6 py-3.5 bg-[#C9A227] text-white hover:bg-[#B38D1F] rounded-xl font-bold flex items-center justify-center gap-2"
+          >
+            <span className="material-symbols-outlined">save</span>
+            حفظ التقدم
+          </button>
+          <Link
+            to="/classification/a/facilities"
+            className="px-6 py-3.5 bg-[#064E3B] text-white hover:bg-[#022C22] rounded-xl font-bold flex items-center justify-center gap-2 shadow-md"
+          >
+            التالي: الملعب والمرافق
+            <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+          </Link>
+        </AxisSummary>
       </main>
     </div>
   );

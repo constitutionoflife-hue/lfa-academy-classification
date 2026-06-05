@@ -4,6 +4,7 @@ import { appStorage } from "./lib/appStorage";
 import { uploadFileAndReturnMetadata } from "./lib/fileUpload";
 import AppHeader from "./components/AppHeader";
 import AxisTopNav from "./components/AxisTopNav";
+import { AxisSummary } from "./components/AxisSummary";
 
 export default function ClassificationBPlanning() {
   const navigate = useNavigate();
@@ -216,16 +217,40 @@ export default function ClassificationBPlanning() {
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row items-center gap-4 pt-8 border-t border-[#E5DED0]">
-          <div className="w-full md:w-auto flex flex-col sm:flex-row gap-4 md:mr-auto">
-            <Link to="/classification/b/leadership" className="w-full sm:w-auto px-8 py-4 rounded-xl font-bold bg-white border border-[#E5DED0] text-[#022C22] hover:bg-gray-50 flex items-center justify-center gap-2">
-              <span className="material-symbols-outlined text-[20px]">arrow_forward</span> السابق
-            </Link>
-            <Link to="/classification/b/organization" className="w-full sm:w-auto px-8 py-4 rounded-xl font-bold bg-[#064E3B] text-white hover:bg-[#022C22] flex items-center justify-center gap-2 shadow-lg">
-              التالي <span className="material-symbols-outlined text-[20px] rotate-180">arrow_forward</span>
-            </Link>
-          </div>
-        </div>
+        <AxisSummary
+          title="ملخص محور التخطيط (تصنيف B)"
+          icon="event_note"
+          items={[
+            { label: "نموذج تخطيط حصة تدريبية (ملف مرفوع)", isActive: !!uploadedFile },
+          ]}
+          percentage={percentage}
+          status={percentage === 100 ? "مكتمل" : percentage > 0 ? "مكتمل جزئيًا" : "لم يبدأ"}
+          subTitle={uploadedFile ? "تم رفع نموذج تخطيط الحصة التدريبية بنجاح" : "يرجى رفع نموذج تخطيط حصة تدريبية لإكمال هذا المحور"}
+          backLink="/dashboard"
+          onSave={() => saveProgress(uploadedFile, notes)}
+        >
+          <Link
+            to="/classification/b/leadership"
+            className="px-6 py-3.5 bg-white text-[#064E3B] border-2 border-[#064E3B] hover:bg-[#064E3B]/5 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
+          >
+            <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+            السابق: القيادة
+          </Link>
+          <button
+            onClick={() => saveProgress(uploadedFile, notes)}
+            className="px-6 py-3.5 bg-[#C9A227] text-white hover:bg-[#B38D1F] rounded-xl font-bold flex items-center justify-center gap-2"
+          >
+            <span className="material-symbols-outlined">save</span>
+            حفظ التقدم
+          </button>
+          <Link
+            to="/classification/b/organization"
+            className="px-6 py-3.5 bg-[#064E3B] text-white hover:bg-[#022C22] rounded-xl font-bold flex items-center justify-center gap-2 shadow-md"
+          >
+            التالي: التنظيم
+            <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+          </Link>
+        </AxisSummary>
       </main>
     </div>
   );

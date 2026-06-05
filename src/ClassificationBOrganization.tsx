@@ -4,6 +4,7 @@ import { appStorage } from "./lib/appStorage";
 import { getRegistryData, RegistryPerson } from "./lib/registry";
 import AppHeader from "./components/AppHeader";
 import AxisTopNav from "./components/AxisTopNav";
+import { AxisSummary } from "./components/AxisSummary";
 
 export default function ClassificationBOrganization() {
   const navigate = useNavigate();
@@ -586,35 +587,43 @@ export default function ClassificationBOrganization() {
           </div>
         </section>
 
-        {/* Action Buttons */}
-        <div className="flex flex-col md:flex-row items-center gap-4 pt-8 border-t border-[#E5DED0]">
-          <div className="w-full md:w-auto flex flex-col sm:flex-row gap-4 md:mr-auto">
-            <Link
-              to="/classification/b/planning"
-              className="w-full sm:w-auto px-8 py-4 rounded-xl font-bold bg-white border border-[#E5DED0] text-[#022C22] hover:bg-gray-50 transition-all text-center flex items-center justify-center gap-2"
-            >
-              <span className="material-symbols-outlined text-[20px]">
-                arrow_forward
-              </span>
-              السابق: التخطيط
-            </Link>
-            <Link
-              to="/dashboard"
-              className="w-full sm:w-auto px-8 py-4 rounded-xl font-bold bg-white border border-[#E5DED0] text-gray-500 hover:text-[#022C22] hover:bg-gray-50 transition-all text-center"
-            >
-              الرجوع إلى لوحة الأكاديمية
-            </Link>
-            <Link
-              to="/classification/b/technical"
-              className="w-full sm:w-auto px-8 py-4 rounded-xl font-bold bg-[#064E3B] text-white hover:bg-[#022C22] transition-all text-center flex items-center justify-center gap-2 group"
-            >
-              التالي: الجانب الفني
-              <span className="material-symbols-outlined text-[20px] rotate-180">
-                arrow_forward
-              </span>
-            </Link>
-          </div>
-        </div>
+        <AxisSummary
+          title="ملخص محور الهيكل التنظيمي (تصنيف B)"
+          icon="account_tree"
+          items={[
+            { label: "مالك الأكاديمية (تصنيف B)", isActive: registryPeople.some(p => p.roleKey === "bOwner") },
+            { label: "المشرف الفني أو الإداري (تصنيف B)", isActive: registryPeople.some(p => p.roleKey === "bGeneralSupervisor") },
+            { label: "مدرب دون 12 (تصنيف B)", isActive: registryPeople.some(p => p.roleKey === "bCoachU12") },
+            { label: "مدرب دون 13 (تصنيف B)", isActive: registryPeople.some(p => p.roleKey === "bCoachU13") },
+            { label: "معالج فيزيائي (تصنيف B)", isActive: registryPeople.some(p => p.roleKey === "bPhysiotherapist") },
+          ]}
+          percentage={progress.percentage}
+          status={progress.status}
+          subTitle={progress.percentage === 100 ? "اكتملت جميع الأدوار المطلوبة" : "يرجى استكمال الأدوار المطلوبة في سجل الكوادر"}
+          backLink="/dashboard"
+        >
+          <Link
+            to="/classification/b/planning"
+            className="px-6 py-3.5 bg-white text-[#064E3B] border-2 border-[#064E3B] hover:bg-[#064E3B]/5 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
+          >
+            <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+            السابق: التخطيط
+          </Link>
+          <Link
+            to="/dashboard"
+            className="px-6 py-3.5 bg-white text-[#064E3B] border-2 border-[#064E3B] hover:bg-[#064E3B]/5 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
+          >
+            <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+            العودة للوحة الرئيسية
+          </Link>
+          <Link
+            to="/classification/b/technical"
+            className="px-6 py-3.5 bg-[#064E3B] text-white hover:bg-[#022C22] rounded-xl font-bold flex items-center justify-center gap-2 shadow-md"
+          >
+            التالي: الجانب الفني
+            <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+          </Link>
+        </AxisSummary>
       </main>
     </div>
   );

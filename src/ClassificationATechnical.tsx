@@ -4,6 +4,7 @@ import { getPersonByRole } from "./lib/registry";
 import { appStorage } from "./lib/appStorage";
 import AppHeader from "./components/AppHeader";
 import AxisTopNav from "./components/AxisTopNav";
+import { AxisSummary } from "./components/AxisSummary";
 
 interface CategoryRequirement {
   id: string;
@@ -444,56 +445,44 @@ export default function ClassificationATechnical() {
           </label>
         </div>
 
-        {/* Completion Summary */}
-        <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-[#E5DED0] mb-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-4 text-[#022C22]">
-              <div
-                className={`w-16 h-16 rounded-full flex items-center justify-center font-black text-xl border-4 ${stats.percentage === 100 ? "bg-green-100 border-green-500 text-green-700" : "bg-[#FFF9E6] border-[#C9A227] text-[#C9A227]"}`}
-              >
-                {stats.percentage}%
-              </div>
-              <div>
-                <h3 className="font-black text-xl mb-1">ملخص المحور</h3>
-                <p className="text-[#64748B] text-sm font-bold">
-                  {stats.percentage === 100
-                    ? "اكتملت جميع متطلبات هذا المحور"
-                    : "يرجى إكمال المتطلبات المتبقية لإنهاء المحور"}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Actions */}
-        <div className="flex flex-col md:flex-row items-center gap-4 pt-6 border-t border-[#E5DED0]">
-          <div className="w-full md:w-auto flex flex-col sm:flex-row gap-4 md:mr-auto">
-            <Link
-              to="/classification/a/organization"
-              className="w-full sm:w-auto px-8 py-3.5 rounded-xl font-bold bg-white border border-[#E5DED0] text-[#64748B] hover:text-[#022C22] hover:bg-gray-50 transition-colors text-center flex items-center justify-center gap-2"
-            >
-              <span className="material-symbols-outlined text-[20px]">
-                chevron_right
-              </span>
-              السابق: التنظيم
-            </Link>
-            <Link
-              to="/dashboard"
-              className="w-full sm:w-auto px-8 py-3.5 rounded-xl font-bold bg-white border border-[#E5DED0] text-[#64748B] hover:text-[#022C22] hover:bg-gray-50 transition-colors text-center"
-            >
-              الرجوع للوحة
-            </Link>
-            <Link
-              to="/classification/a/budget"
-              className="w-full sm:w-auto px-10 py-3.5 rounded-xl font-bold bg-[#064E3B] text-white hover:bg-[#022C22] transition-colors flex items-center justify-center gap-2 shadow-md"
-            >
-              التالي: الميزانية
-              <span className="material-symbols-outlined text-[20px]">
-                chevron_left
-              </span>
-            </Link>
-          </div>
-        </div>
+        <AxisSummary
+          title="ملخص محور الجانب الفني والتدريبي"
+          icon="sports_soccer"
+          items={[
+            ...categories.map(cat => ({
+              label: `مدرب ${cat.name} — شهادة ${cat.minCertLabel} + ${cat.minPlayers} لاعبًا`,
+              isActive: !!(coaches[cat.id] && isCertValid(coaches[cat.id], cat.minCertificate) && (data[cat.id]?.playerCount >= cat.minPlayers) && data[cat.id]?.teamReady && data[cat.id]?.fieldConfirmed && data[cat.id]?.ballConfirmed),
+            })),
+            { label: "تأكيد المشاركة في البطولات (U12 و U13)", isActive: !!(data.readyU12 && data.readyU13) },
+          ]}
+          percentage={stats.percentage}
+          status={getStatusLabel()}
+          subTitle={stats.percentage === 100 ? "اكتملت جميع متطلبات الجانب الفني" : `${stats.totalPossible - (stats.coachesFound + stats.playerCountsMet + stats.fieldConfirmed + stats.ballConfirmed + stats.championshipsConfirmed)} نقطة متبقية من أصل ${stats.totalPossible}`}
+          backLink="/dashboard"
+          onSave={() => saveProgress(data)}
+        >
+          <Link
+            to="/classification/a/organization"
+            className="px-6 py-3.5 bg-white text-[#064E3B] border-2 border-[#064E3B] hover:bg-[#064E3B]/5 rounded-xl font-bold transition-all text-center flex items-center justify-center gap-2"
+          >
+            <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+            السابق: التنظيم
+          </Link>
+          <button
+            onClick={() => saveProgress(data)}
+            className="px-6 py-3.5 bg-[#C9A227] text-white hover:bg-[#B38D1F] rounded-xl font-bold flex items-center justify-center gap-2"
+          >
+            <span className="material-symbols-outlined">save</span>
+            حفظ التقدم
+          </button>
+          <Link
+            to="/classification/a/budget"
+            className="px-6 py-3.5 bg-[#064E3B] text-white hover:bg-[#022C22] rounded-xl font-bold flex items-center justify-center gap-2 shadow-md"
+          >
+            التالي: الميزانية
+            <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+          </Link>
+        </AxisSummary>
       </main>
     </div>
   );

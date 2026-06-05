@@ -328,26 +328,80 @@ export default function ClassificationATechnical() {
                   {cat.name}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Coach Status Section */}
-                  <div className="space-y-3 bg-white p-4 rounded-xl border border-[#E5DED0]">
-                    <h4 className="font-bold text-[#022C22] text-sm">
+                  {/* Coach Profile Card */}
+                  <div className={`space-y-3 bg-white p-4 rounded-2xl border-2 ${isValidCoach ? 'border-green-200' : coach ? 'border-amber-200' : 'border-red-100'}`}>
+                    <h4 className="font-bold text-[#022C22] text-xs uppercase tracking-wider">
                       المدرب المعين ({cat.minCertLabel})
                     </h4>
                     {coach ? (
-                      <div>
-                        <div className="text-sm font-bold text-[#064E3B]">
-                          {coach.name}
+                      <div className="flex flex-col gap-3">
+                        {/* Photo + name row */}
+                        <div className="flex items-center gap-3">
+                          {/* Profile photo */}
+                          <div className="w-14 h-14 rounded-2xl border-2 border-[#E5DED0] overflow-hidden bg-[#F6F1E7] flex items-center justify-center shrink-0">
+                            {(coach.files?.profilePhoto?.preview || coach.files?.profilePhoto?.downloadURL || coach.files?.profilePhoto?.url) ? (
+                              <img
+                                src={coach.files.profilePhoto.preview || coach.files.profilePhoto.downloadURL || coach.files.profilePhoto.url}
+                                alt={coach.fullName}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span className="material-symbols-outlined text-[#64748B] text-3xl">person</span>
+                            )}
+                          </div>
+                          {/* Name + cert */}
+                          <div className="flex-1 min-w-0">
+                            <div className="font-black text-[#022C22] text-sm truncate">
+                              {coach.fullName || "—"}
+                            </div>
+                            <div className={`flex items-center gap-1 text-xs font-bold mt-0.5 ${isValidCoach ? "text-green-600" : "text-amber-600"}`}>
+                              <span className="material-symbols-outlined text-[14px]">
+                                {isValidCoach ? "verified" : "warning"}
+                              </span>
+                              {coach.certificateType || "شهادة غير مسجلة"}
+                            </div>
+                          </div>
                         </div>
-                        <div
-                          className={`text-xs mt-1 ${isValidCoach ? "text-green-600" : "text-red-600"}`}
-                        >
-                          الشهادة: {coach.certificateType || "غير متوفرة"}{" "}
-                          {isValidCoach ? "✓" : "✗ (لا تلبي الحد الأدنى)"}
+                        {/* Details grid */}
+                        <div className="grid grid-cols-1 gap-1.5 text-xs">
+                          {coach.dateOfBirth && (
+                            <div className="flex items-center gap-2 text-[#64748B]">
+                              <span className="material-symbols-outlined text-[14px] text-[#064E3B]">cake</span>
+                              <span className="font-bold">تاريخ الميلاد:</span>
+                              <span dir="ltr">{coach.dateOfBirth}</span>
+                            </div>
+                          )}
+                          {(coach.phoneNum || coach.phone) && (
+                            <div className="flex items-center gap-2 text-[#64748B]">
+                              <span className="material-symbols-outlined text-[14px] text-[#064E3B]">phone</span>
+                              <span className="font-bold">الهاتف:</span>
+                              <span dir="ltr">{coach.phoneNum || coach.phone}</span>
+                            </div>
+                          )}
+                          {coach.email && (
+                            <div className="flex items-center gap-2 text-[#64748B] min-w-0">
+                              <span className="material-symbols-outlined text-[14px] text-[#064E3B] shrink-0">email</span>
+                              <span className="font-bold shrink-0">الإيميل:</span>
+                              <span className="truncate" dir="ltr">{coach.email}</span>
+                            </div>
+                          )}
                         </div>
+                        {/* Cert validity badge */}
+                        {!isValidCoach && (
+                          <div className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1">
+                            الشهادة الحالية أقل من الحد المطلوب ({cat.minCertLabel})
+                          </div>
+                        )}
                       </div>
                     ) : (
-                      <div className="text-sm text-red-600">
-                        غير مسجل في سجل الأكاديمية
+                      <div className="flex flex-col items-center gap-2 py-4 text-center">
+                        <div className="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center">
+                          <span className="material-symbols-outlined text-red-400 text-2xl">person_off</span>
+                        </div>
+                        <div className="text-xs font-bold text-red-600">غير مسجل في سجل الأكاديمية</div>
+                        <Link to="/academy-registry" className="text-[10px] font-black text-[#064E3B] underline hover:no-underline">
+                          إضافة المدرب للسجل ←
+                        </Link>
                       </div>
                     )}
                   </div>

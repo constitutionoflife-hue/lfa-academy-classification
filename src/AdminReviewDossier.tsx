@@ -852,19 +852,22 @@ export default function AdminReviewDossier() {
         detectedKind = "doc";
       }
 
-      // Fix 2: convert data: URI PDFs/docs to Blob URL
-      // Modern browsers block data: URIs in iframes (CSP), Blob URLs work fine
+      // Fix 2: convert PDF/doc source to Blob URL for iframe compatibility.
+      // - data: URIs are blocked by CSP in iframes
+      // - https:// Firebase Storage URLs show black (browser blocks cross-origin PDF framing)
+      // Blob URLs are always same-origin → iframes render them correctly.
       if (
-        resolvedSource?.startsWith("data:") &&
-        (detectedKind === "pdf" || detectedKind === "doc")
+        resolvedSource &&
+        (detectedKind === "pdf" || detectedKind === "doc") &&
+        (resolvedSource.startsWith("data:") || resolvedSource.startsWith("https://"))
       ) {
         try {
           const res = await fetch(resolvedSource);
           const blob = await res.blob();
-          downloadSource = downloadSource || resolvedSource; // keep data: URI for download button
+          downloadSource = downloadSource || resolvedSource; // keep original for download button
           resolvedSource = URL.createObjectURL(blob);
         } catch {
-          // fallback: keep data: URI, browser may still handle it
+          // Fetch failed — keep original URL; "فتح في نافذة جديدة" still works
         }
       }
 
@@ -885,6 +888,8 @@ export default function AdminReviewDossier() {
       }
     };
 
+    // Show spinner immediately while async resolution runs
+    setPreviewFile({ url: "loading", title: `${label} - ${fullName}`, fileObj });
     resolveAndSet();
   };
 

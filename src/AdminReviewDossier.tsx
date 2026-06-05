@@ -818,8 +818,17 @@ export default function AdminReviewDossier() {
          }
       }
 
+      // Fix 1: storagePath fallback — get real downloadURL from Firebase Storage
       if (!resolvedSource && fileObj.storagePath) {
-        // Fallback for missing source
+        try {
+          const { getDownloadURL, ref } = await import('firebase/storage');
+          const { storage } = await import('./lib/firebase');
+          const storageRef = ref(storage, fileObj.storagePath);
+          resolvedSource = await getDownloadURL(storageRef);
+          downloadSource = resolvedSource;
+        } catch (e) {
+          console.warn('Could not get downloadURL from storagePath:', e);
+        }
       }
 
       const mimeType = (
@@ -828,24 +837,35 @@ export default function AdminReviewDossier() {
         fileObj.mimeType ||
         ""
       ).toLowerCase();
-      const fileName = (fileObj.name || "").toLowerCase();
-
-      console.log("Admin preview file:", fileObj);
-      console.log("Resolved preview source:", resolvedSource);
-      console.log("Detected mimeType:", mimeType);
-      console.log("Detected fileName:", fileName);
+      const fileName = (fileObj.name || fileObj.originalName || "").toLowerCase();
 
       const isImage =
         mimeType.startsWith("image/") ||
         /\.(jpg|jpeg|png|webp|gif)$/i.test(fileName);
-
-      console.log("Is image:", isImage);
 
       let detectedKind = "unknown";
       if (isImage) {
         detectedKind = "image";
       } else if (mimeType.includes("pdf") || fileName.endsWith(".pdf")) {
         detectedKind = "pdf";
+      } else if (mimeType.includes("word") || /\.(doc|docx)$/i.test(fileName)) {
+        detectedKind = "doc";
+      }
+
+      // Fix 2: convert data: URI PDFs/docs to Blob URL
+      // Modern browsers block data: URIs in iframes (CSP), Blob URLs work fine
+      if (
+        resolvedSource?.startsWith("data:") &&
+        (detectedKind === "pdf" || detectedKind === "doc")
+      ) {
+        try {
+          const res = await fetch(resolvedSource);
+          const blob = await res.blob();
+          downloadSource = downloadSource || resolvedSource; // keep data: URI for download button
+          resolvedSource = URL.createObjectURL(blob);
+        } catch {
+          // fallback: keep data: URI, browser may still handle it
+        }
       }
 
       if (resolvedSource) {
@@ -6725,11 +6745,59 @@ export default function AdminReviewDossier() {
 
                   if (isPdf) {
                     return (
-                      <iframe
-                        src={url}
-                        className="w-full h-full min-h-[500px] border-0 rounded-lg shadow-sm bg-white"
-                        title={previewFile.title}
-                      />
+                      <div className="w-full h-full flex flex-col gap-3" dir="rtl">
+                        {/* Fix 3: always show open-in-new-tab as reliable fallback */}
+                        <div className="flex items-center justify-center gap-3 shrink-0">
+                          <a
+                            href={previewFile.downloadUrl || url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 bg-[#064E3B] text-white px-5 py-2 rounded-lg font-bold text-sm hover:bg-[#022C22] transition-colors shadow"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">open_in_new</span>
+                            فتح الملف في نافذة جديدة
+                          </a>
+                          <a
+                            href={previewFile.downloadUrl || url}
+                            download
+                            className="inline-flex items-center gap-2 bg-gray-200 text-gray-700 px-5 py-2 rounded-lg font-bold text-sm hover:bg-gray-300 transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">download</span>
+                            تحميل
+                          </a>
+                        </div>
+                        <iframe
+                          src={url}
+                          className="w-full flex-1 min-h-[480px] border-0 rounded-lg shadow-sm bg-white"
+                          title={previewFile.title}
+                          onError={(e) => { (e.currentTarget as HTMLIFrameElement).style.display = 'none'; }}
+                        />
+                      </div>
+                    );
+                  }
+
+                  const isDoc = finalKind === "doc";
+                  if (isDoc) {
+                    const viewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(previewFile.downloadUrl || url)}&embedded=true`;
+                    return (
+                      <div className="w-full h-full flex flex-col gap-3" dir="rtl">
+                        <div className="flex items-center justify-center gap-3 shrink-0">
+                          <a
+                            href={previewFile.downloadUrl || url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 bg-[#064E3B] text-white px-5 py-2 rounded-lg font-bold text-sm hover:bg-[#022C22] transition-colors shadow"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">open_in_new</span>
+                            فتح الملف في نافذة جديدة
+                          </a>
+                        </div>
+                        <iframe
+                          src={viewerUrl}
+                          className="w-full flex-1 min-h-[480px] border-0 rounded-lg shadow-sm"
+                          title={previewFile.title}
+                        />
+                      </div>
                     );
                   }
 
@@ -6758,20 +6826,23 @@ export default function AdminReviewDossier() {
                     );
                   }
 
+                  // Unknown type but we have a URL — offer open/download
+                  const hasValidUrl = url.startsWith('https://') || url.startsWith('blob:') || url.startsWith('data:');
                   return (
-                    <div className="text-center p-8 bg-white rounded-xl shadow-sm border border-gray-100 max-w-sm w-full min-w-[280px] sm:min-w-[320px] mx-auto">
-                      <span className="material-symbols-outlined text-[48px] text-red-500 mb-4 block">
-                        error_outline
+                    <div className="text-center p-8 bg-white rounded-xl shadow-sm border border-gray-100 max-w-sm w-full min-w-[280px] sm:min-w-[320px] mx-auto" dir="rtl">
+                      <span className="material-symbols-outlined text-[48px] text-[#C9A227] mb-4 block">
+                        description
                       </span>
-                      <h4 className="font-bold text-gray-800 mb-4">
-                        تعذر معاينة الملف لأن رابط الملف غير صالح.
+                      <h4 className="font-bold text-gray-800 mb-2">
+                        {hasValidUrl ? 'الملف جاهز للفتح أو التحميل' : 'تعذر معاينة الملف — رابط الملف غير متوفر'}
                       </h4>
-                      <p className="text-xs text-gray-500 mb-4 break-all">
-                        {url.substring(0, 100)}...
-                      </p>
+                      {hasValidUrl && (
+                        <p className="text-sm text-gray-500 mb-6">
+                          اضغط على الزر أدناه لفتح الملف في نافذة جديدة
+                        </p>
+                      )}
                       <a
                         href={previewFile.downloadUrl || url}
-                        download={previewFile.title}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-2 bg-[#064E3B] text-white px-6 py-2.5 rounded-lg hover:bg-[#022C22] transition-colors font-bold"

@@ -391,19 +391,64 @@ export default function ClassificationAFacilities() {
                   <label className="block text-sm font-bold mb-2">
                     المقاسات الفعلية للملعب
                   </label>
-                  <input
-                    type="text"
-                    value={data.pitchSpecifications.actualPitchSize}
-                    onChange={(e) =>
-                      updateSection(
-                        "pitchSpecifications",
-                        "actualPitchSize",
-                        e.target.value,
-                      )
-                    }
-                    placeholder="مثال: 75×50 متر"
-                    className="w-full p-3 rounded-xl border border-[#E5DED0] focus:outline-none focus:border-[#C9A227] font-bold text-sm"
-                  />
+                  {/* Two dropdowns — width (45–75m) × depth (70–110m), 5m steps */}
+                  <div className="flex items-center gap-3 flex-wrap">
+                    {/* Width */}
+                    <div className="flex flex-col gap-1 flex-1 min-w-[120px]">
+                      <span className="text-xs font-bold text-[#64748B]">العرض (متر)</span>
+                      <select
+                        value={(() => {
+                          const parts = (data.pitchSpecifications.actualPitchSize || "").split("×");
+                          return parts[0]?.trim() || "";
+                        })()}
+                        onChange={(e) => {
+                          const parts = (data.pitchSpecifications.actualPitchSize || "").split("×");
+                          const depth = parts[1]?.trim() || "";
+                          const newVal = e.target.value && depth ? `${e.target.value} × ${depth}` : e.target.value ? `${e.target.value} ×` : "";
+                          updateSection("pitchSpecifications", "actualPitchSize", newVal);
+                        }}
+                        className="w-full p-3 rounded-xl border border-[#E5DED0] focus:outline-none focus:border-[#C9A227] font-bold text-sm bg-white"
+                      >
+                        <option value="">— اختر العرض —</option>
+                        {[45, 50, 55, 60, 65, 70, 75].map(w => (
+                          <option key={w} value={w}>{w} متر</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <span className="text-2xl font-black text-[#064E3B] mt-4">×</span>
+
+                    {/* Depth */}
+                    <div className="flex flex-col gap-1 flex-1 min-w-[120px]">
+                      <span className="text-xs font-bold text-[#64748B]">الطول (متر)</span>
+                      <select
+                        value={(() => {
+                          const parts = (data.pitchSpecifications.actualPitchSize || "").split("×");
+                          return parts[1]?.trim() || "";
+                        })()}
+                        onChange={(e) => {
+                          const parts = (data.pitchSpecifications.actualPitchSize || "").split("×");
+                          const width = parts[0]?.trim() || "";
+                          const newVal = width && e.target.value ? `${width} × ${e.target.value}` : e.target.value ? `× ${e.target.value}` : "";
+                          updateSection("pitchSpecifications", "actualPitchSize", newVal);
+                        }}
+                        className="w-full p-3 rounded-xl border border-[#E5DED0] focus:outline-none focus:border-[#C9A227] font-bold text-sm bg-white"
+                      >
+                        <option value="">— اختر الطول —</option>
+                        {[70, 75, 80, 85, 90, 95, 100, 105, 110].map(d => (
+                          <option key={d} value={d}>{d} متر</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Live preview */}
+                  {data.pitchSpecifications.actualPitchSize?.includes("×") &&
+                    !data.pitchSpecifications.actualPitchSize.endsWith("×") && (
+                    <div className="mt-2 px-4 py-2 bg-[#064E3B]/5 rounded-lg border border-[#064E3B]/10 text-sm font-bold text-[#064E3B] inline-block">
+                      المقاس المختار: {data.pitchSpecifications.actualPitchSize} متر
+                    </div>
+                  )}
                 </div>
               )}
               {data.pitchSpecifications.hasMinimumPitchSize === "كلا" && (

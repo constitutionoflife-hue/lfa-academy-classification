@@ -99,14 +99,6 @@ function HeroSlideshow() {
             </motion.div>
           </div>
 
-          {/* Lebanese flag accent — top left */}
-          <div className="absolute top-5 left-5 flex flex-col overflow-hidden rounded shadow-lg z-10 opacity-70 border border-white/10" style={{ width: 28, height: 18 }}>
-            <div style={{ flex: 1, background: '#ED1C24' }}></div>
-            <div style={{ flex: 1, background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span className="material-symbols-outlined text-[#00A859]" style={{ fontSize: '7px' }}>park</span>
-            </div>
-            <div style={{ flex: 1, background: '#ED1C24' }}></div>
-          </div>
         </motion.div>
       </AnimatePresence>
 
@@ -363,19 +355,8 @@ export default function LandingPage() {
               transition={{ duration: 0.9, ease: "easeOut", delay: 0.12 }}
               className="flex-[1.15] text-right space-y-6"
             >
-              {/* Badge row with Lebanese flag */}
-              <div className="flex items-center justify-end gap-3">
-                {/* Lebanese flag */}
-                <div
-                  className="flex flex-col overflow-hidden shadow-lg border border-white/[0.15]"
-                  style={{ width: 26, height: 17, borderRadius: 2 }}
-                >
-                  <div style={{ flex: 1, background: '#ED1C24' }}></div>
-                  <div style={{ flex: 1, background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span className="material-symbols-outlined text-[#00A859]" style={{ fontSize: 7 }}>park</span>
-                  </div>
-                  <div style={{ flex: 1, background: '#ED1C24' }}></div>
-                </div>
+              {/* Badge */}
+              <div className="flex items-center justify-end">
                 <div
                   className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full"
                   style={{
@@ -437,27 +418,6 @@ export default function LandingPage() {
                 </Link>
               </div>
 
-              {/* Mini stats strip */}
-              <div
-                className="flex items-center justify-end gap-7 pt-5"
-                style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}
-              >
-                {[
-                  { num: "A / B", label: "مسار التصنيف" },
-                  { num: "10", label: "محاور تقييم" },
-                  { num: "٤", label: "فئات عمرية" },
-                ].map((stat) => (
-                  <div key={stat.num} className="text-right">
-                    <div className="font-black text-[22px] leading-none" style={{
-                      background: 'linear-gradient(135deg, #E1BC4B, #C9A227)',
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent',
-                      backgroundClip: 'text'
-                    }}>{stat.num}</div>
-                    <div className="text-white/35 text-[11px] font-bold mt-1">{stat.label}</div>
-                  </div>
-                ))}
-              </div>
             </motion.div>
           </div>
         </section>

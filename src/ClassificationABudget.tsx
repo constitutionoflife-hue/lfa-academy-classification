@@ -89,14 +89,11 @@ export default function ClassificationABudget() {
 
   const calculateProgressAndTotals = (currentData: any) => {
     let completed = 0;
-    const totalReqs = 13;
+    const totalReqs = 10;
 
-    // General Info (5)
+    // General Info (2) — only season and playersCount have actual inputs on this page.
     if (currentData.generalInfo?.season) completed++;
     if (Number(currentData.generalInfo?.playersCount) > 0) completed++;
-    if (Number(currentData.generalInfo?.ageGroupsCount) > 0) completed++;
-    if (Number(currentData.generalInfo?.coachesCount) > 0) completed++;
-    if (Number(currentData.generalInfo?.adminsCount) > 0) completed++;
 
     // Base Expenses (7)
     let coveredBaseExpensesCount = 0;
@@ -408,7 +405,7 @@ export default function ClassificationABudget() {
           title="ملخص محور الميزانية المالية"
           icon="account_balance"
           items={[
-            { label: "المعلومات العامة (الموسم، اللاعبون، الفئات، المدربون، الإداريون)", isActive: !!(data.generalInfo?.season && Number(data.generalInfo?.playersCount) > 0 && Number(data.generalInfo?.ageGroupsCount) > 0 && Number(data.generalInfo?.coachesCount) > 0 && Number(data.generalInfo?.adminsCount) > 0) },
+            { label: "المعلومات العامة (الموسم، اللاعبون)", isActive: !!(data.generalInfo?.season && Number(data.generalInfo?.playersCount) > 0) },
             { label: "المصروفات الأساسية (رواتب، ملعب، رسوم، تأمين، تجهيزات، أنشطة)", isActive: totals.coveredBaseExpensesCount > 0 },
             { label: "مصادر الدخل (اشتراكات اللاعبين أو الرعايات أو مساهمة المالك)", isActive: Object.values(data.baseIncomeSources || {}).some((item: any) => Number(item?.value || 0) > 0) || (data.extraIncomeSources || []).some((ex: any) => Number(ex.value || 0) > 0) },
           ]}

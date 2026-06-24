@@ -114,77 +114,74 @@ export default function ClassificationASafeguarding() {
     });
   };
 
+  // Maps every Yes/No question on this page to the proof fields it requires
+  // when answered "نعم". Answering "كلا" always counts as 100% answered for
+  // that question (no proof needed); answering "نعم" only counts as complete
+  // once every dependency below is filled in.
+  const YES_NO_DEPENDENCIES: Record<string, string[]> = {
+    behavior_charter_status: [
+      "behavior_charter_doc",
+      "charter_includes_players",
+      "charter_includes_coaches",
+      "charter_includes_parents",
+      "charter_signed",
+      "charter_explained",
+    ],
+    cp_policy_status: [
+      "cp_policy_doc",
+      "cp_no_violence_status",
+      "cp_no_bullying_status",
+      "cp_safe_comm_status",
+      "cp_reporting_mechanism_status",
+      "cp_officer_name_status",
+      "cp_staff_informed_status",
+    ],
+    cp_reporting_mechanism_status: ["cp_reporting_mechanism_doc"],
+    cp_officer_name_status: ["cp_officer_name"],
+    workshop_plan_status: ["ws_attendance_doc_status", "ws_coordinator_name_status"],
+    ws_attendance_doc_status: ["ws_attendance_doc"],
+    ws_coordinator_name_status: ["ws_coordinator_name"],
+    parent_comm_doc_status: ["parent_comm_doc"],
+    parent_comm_channel_status: ["parent_comm_channel_text"],
+    parent_complaints_confirm_status: ["parent_complaints_doc"],
+  };
+
+  const isFieldComplete = (
+    key: string,
+    currentData: Record<string, any>,
+  ): boolean => {
+    const deps = YES_NO_DEPENDENCIES[key];
+    if (deps) {
+      // This key is itself a Yes/No question.
+      const status = currentData[key]?.value;
+      if (status === "كلا") return true;
+      if (status === "نعم") return deps.every((d) => isFieldComplete(d, currentData));
+      return false;
+    }
+    // Plain proof field: file upload, checkbox, or filled text/select value.
+    const f = currentData[key];
+    return !!(
+      f &&
+      (f.uploaded || f.checked || (typeof f.value === "string" && f.value.trim() !== ""))
+    );
+  };
+
   const calculateProgress = (currentData: Record<string, any> = data) => {
-    const requirements = [
-      {
-        status: "behavior_charter_status",
-        fields: ["behavior_charter_doc", "charter_signed"],
-      },
-      {
-        status: "cp_policy_status",
-        fields: [
-          "cp_policy_doc",
-          "cp_reporting_mechanism_doc",
-          "cp_officer_name",
-        ],
-      },
-      {
-        status: "workshop_plan_status",
-        fields: [
-          "workshop_plan_doc",
-          "ws_content_doc",
-          "ws_attendance_doc",
-          "ws_coordinator_name",
-        ],
-      },
-      { status: "parent_comm_doc_status", fields: ["parent_comm_doc"] },
-      { status: "parent_notified_rules_status", fields: [] },
-      {
-        status: "parent_comm_channel_status",
-        fields: ["parent_comm_channel_text"],
-      },
-      {
-        status: "parent_complaints_confirm_status",
-        fields: ["parent_complaints_doc"],
-      },
+    const topLevelKeys = [
+      "behavior_charter_status",
+      "cp_policy_status",
+      "workshop_plan_status",
+      "parent_comm_doc_status",
+      "parent_notified_rules_status",
+      "parent_comm_channel_status",
+      "parent_complaints_confirm_status",
     ];
 
-    let completedCount = 0;
-    requirements.forEach((req) => {
-      if (req.status) {
-        if (currentData[req.status]?.value === "كلا") {
-          completedCount++;
-        } else if (currentData[req.status]?.value === "نعم") {
-          let reqComplete = true;
-          req.fields.forEach((field) => {
-            const f = currentData[field];
-            if (
-              !(
-                f?.uploaded ||
-                f?.checked ||
-                (f?.value && f.value.trim() !== "")
-              )
-            ) {
-              reqComplete = false;
-            }
-          });
-          if (reqComplete) completedCount++;
-        }
-      } else {
-        let reqComplete = true;
-        req.fields.forEach((field) => {
-          const f = currentData[field];
-          if (
-            !(f?.uploaded || f?.checked || (f?.value && f.value.trim() !== ""))
-          ) {
-            reqComplete = false;
-          }
-        });
-        if (reqComplete) completedCount++;
-      }
-    });
+    const completedCount = topLevelKeys.filter((key) =>
+      isFieldComplete(key, currentData),
+    ).length;
+    const total = topLevelKeys.length;
 
-    const total = requirements.length;
     return {
       total,
       completed: completedCount,
@@ -805,20 +802,19 @@ export default function ClassificationASafeguarding() {
           items={[
             {
               label: "ميثاق السلوك",
-              isActive: data.behavior_charter_doc?.uploaded ? true : false,
+              isActive: isFieldComplete("behavior_charter_status", data),
             },
             {
               label: "سياسة حماية الطفل",
-              isActive: data.cp_policy_doc?.uploaded ? true : false,
+              isActive: isFieldComplete("cp_policy_status", data),
             },
             {
               label: "الورش السنوية",
-              isActive: data.workshop_plan_doc?.uploaded ? true : false,
+              isActive: isFieldComplete("workshop_plan_status", data),
             },
             {
               label: "نظام الشكاوى",
-              isActive:
-                data.parent_complaints_confirm_status === true ? true : false,
+              isActive: isFieldComplete("parent_complaints_confirm_status", data),
             },
           ]}
         >

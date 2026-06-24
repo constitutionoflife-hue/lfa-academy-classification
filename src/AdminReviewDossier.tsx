@@ -974,16 +974,23 @@ export default function AdminReviewDossier() {
         updatedAt: Date.now(),
       });
 
+      // The decision itself is already saved at this point — a failure sending
+      // the academy's notification (e.g. Firestore rules not yet deployed)
+      // must never make this look like the whole save failed.
       const decisionKey = mapDecisionTextToKey(finalDecision);
       if (decisionKey) {
-        await maybeCreateDecisionNotification({
-          academyId,
-          decisionKey,
-          adminComment: finalDecisionNote,
-          previousDecisionKey,
-          previousComment,
-          isFirstDecision,
-        });
+        try {
+          await maybeCreateDecisionNotification({
+            academyId,
+            decisionKey,
+            adminComment: finalDecisionNote,
+            previousDecisionKey,
+            previousComment,
+            isFirstDecision,
+          });
+        } catch (notifyErr: any) {
+          console.error("Failed to create decision notification:", notifyErr);
+        }
       }
 
       setAcademyData((prev) =>

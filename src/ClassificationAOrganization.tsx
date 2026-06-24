@@ -630,7 +630,7 @@ export default function ClassificationAOrganization() {
               label: "الجهاز الطبي",
               isActive: !!getPersonByRole("medicalManager"),
             },
-            { label: "النظام الداخلي", isActive: !!data.internal_rules_doc },
+            { label: "النظام الداخلي", isActive: !!data.internal_rules?.uploaded },
           ]}
         >
           <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">

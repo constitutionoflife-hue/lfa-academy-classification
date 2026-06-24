@@ -181,7 +181,7 @@ export default function ClassificationATechnical() {
       }
 
       // 2. Players
-      if (catData.playerCount >= cat.minPlayers && catData.teamReady) {
+      if (catData.playersCount >= cat.minPlayers) {
         results.playerCountsMet++;
       } else {
         catIsFullyDone = false;
@@ -505,7 +505,7 @@ export default function ClassificationATechnical() {
           items={[
             ...categories.map(cat => ({
               label: `مدرب ${cat.name} — شهادة ${cat.minCertLabel} + ${cat.minPlayers} لاعبًا`,
-              isActive: !!(coaches[cat.id] && isCertValid(coaches[cat.id], cat.minCertificate) && (data[cat.id]?.playerCount >= cat.minPlayers) && data[cat.id]?.teamReady && data[cat.id]?.fieldConfirmed && data[cat.id]?.ballConfirmed),
+              isActive: !!(coaches[cat.id] && isCertValid(coaches[cat.id], cat.minCertificate) && (data[cat.id]?.playersCount >= cat.minPlayers) && data[cat.id]?.fieldConfirmed && data[cat.id]?.ballConfirmed),
             })),
             { label: "تأكيد المشاركة في البطولات (U12 و U13)", isActive: !!(data.readyU12 && data.readyU13) },
           ]}

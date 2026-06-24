@@ -68,7 +68,7 @@ export default function ClassificationABudget() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        setData({
+        const merged = {
           ...DEFAULT_DATA,
           ...parsed,
           generalInfo: { ...DEFAULT_DATA.generalInfo, ...parsed.generalInfo },
@@ -80,7 +80,27 @@ export default function ClassificationABudget() {
             ...DEFAULT_DATA.baseIncomeSources,
             ...parsed.baseIncomeSources,
           },
-        });
+        };
+        setData(merged);
+        // Silently re-sync the stored percentage with the live calculation (no
+        // toast) so a previously-cached value never disagrees with what this
+        // page — and the dashboard, which reads the same stored value — show.
+        const fresh = calculateProgressAndTotals(merged);
+        if (parsed.completionPercentage !== fresh.percentage) {
+          appStorage.setItem(
+            "classificationA_budget",
+            JSON.stringify({
+              ...merged,
+              totalExpenses: fresh.totalExpenses,
+              totalIncome: fresh.totalIncome,
+              balance: fresh.balance,
+              coveredBaseExpensesCount: fresh.coveredBaseExpensesCount,
+              completionPercentage: fresh.percentage,
+              status: fresh.status,
+              lastUpdated: Date.now(),
+            }),
+          );
+        }
       } catch (e) {
         console.error("Error loading saved data");
       }

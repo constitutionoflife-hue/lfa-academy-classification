@@ -29,7 +29,15 @@ export default function ClassificationASafeguarding() {
     const saved = appStorage.getItem("classificationA_safeguarding");
     if (saved) {
       try {
-        setData(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        setData(parsed);
+        // Silently re-sync the stored percentage with the live calculation so a
+        // previously-cached (possibly stale) value never disagrees with what
+        // this page — and the dashboard, which reads the same stored value — show.
+        const fresh = calculateProgress(parsed);
+        if (parsed.completionPercentage !== fresh.percentage) {
+          saveProgress(parsed);
+        }
       } catch (e) {
         console.error("Error loading saved data");
       }

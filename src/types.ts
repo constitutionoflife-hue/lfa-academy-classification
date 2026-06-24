@@ -20,7 +20,7 @@ export interface AcademyAccount {
   classificationType?: string;
   role?: string;
   isAdmin?: boolean;
-  adminStatus?: 'approved' | 'declined' | 'pending';
+  adminStatus?: string;
   adminFinalNote?: string;
   totalProgress?: number;
   adminAxisReviews?: Record<string, any>;

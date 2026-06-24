@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar";
+import NotificationBell from "./NotificationBell";
 import { useAuth } from "../lib/AuthContext";
 import { logout as authLogout } from "../lib/auth";
 
@@ -110,6 +111,7 @@ export default function AppHeader({ academyName: propName, academyLogo: propLogo
             
             {!isLanding && isAuth ? (
               <div className="flex items-center gap-3 md:gap-4 border-r border-white/10 pr-3 md:pr-6">
+                {!isAdmin && <NotificationBell />}
                 <div className="text-right hidden md:flex flex-col items-end">
                   <div className="text-[#C9A227] text-[9px] font-black uppercase tracking-widest">{isAdmin ? "مسؤول النظام" : "طالب التصنيف"}</div>
                   <div className="font-bold text-sm text-white">{isAdmin ? "الإدارة" : (internalName || "طالب التصنيف")}</div>

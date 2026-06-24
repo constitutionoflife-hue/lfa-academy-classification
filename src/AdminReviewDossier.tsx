@@ -13,6 +13,7 @@ import { db } from "./lib/firebase";
 import { AcademyAccount } from "./types";
 import { FILE_KEYS } from "./lib/registry";
 import PdfViewer from "./components/PdfViewer";
+import { maybeCreateDecisionNotification, mapDecisionTextToKey } from "./lib/notifications";
 
 const FIELD_LABELS: Record<string, string> = {
   hasMinimumPitchSize: "تتمتع الملاعب بمساحات كافية؟",
@@ -963,11 +964,32 @@ export default function AdminReviewDossier() {
       if (finalDecision.includes("مقبول")) statusToSave = "approved";
       if (finalDecision.includes("مرفوض")) statusToSave = "declined";
 
+      const previousDecisionKey = mapDecisionTextToKey(academyData?.adminStatus);
+      const previousComment = academyData?.adminFinalNote || "";
+      const isFirstDecision = !academyData?.adminStatus;
+
       await updateDoc(doc(db, "users", academyId), {
         adminStatus: statusToSave,
         adminFinalNote: finalDecisionNote,
         updatedAt: Date.now(),
       });
+
+      const decisionKey = mapDecisionTextToKey(finalDecision);
+      if (decisionKey) {
+        await maybeCreateDecisionNotification({
+          academyId,
+          decisionKey,
+          adminComment: finalDecisionNote,
+          previousDecisionKey,
+          previousComment,
+          isFirstDecision,
+        });
+      }
+
+      setAcademyData((prev) =>
+        prev ? { ...prev, adminStatus: statusToSave, adminFinalNote: finalDecisionNote } : prev,
+      );
+
       alert("تم اعتماد القرار النهائي للملف.");
     } catch (e: any) {
       alert("خطأ أثناء الاعتماد: " + e.message);
